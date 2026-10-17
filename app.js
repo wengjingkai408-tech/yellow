@@ -1,10 +1,16 @@
 const slideCount = 9;
 
-const slides = Array.from({ length: slideCount }, (_, index) => ({
-  number: index + 1,
-  src: `assets/slides/slide-${String(index + 1).padStart(2, "0")}.png`,
-  label: `第 ${index + 1} 页`,
-}));
+const slides = Array.from({ length: slideCount }, (_, index) => {
+  const id = String(index + 1).padStart(2, "0");
+  return {
+    number: index + 1,
+    src: `assets/slides-webp/slide-${id}.webp`,
+    srcMobile: `assets/slides-mobile/slide-${id}.webp`,
+    srcFallback: `assets/slides/slide-${id}.png`,
+    thumb: `assets/thumbs-webp/slide-${id}.webp`,
+    label: `第 ${index + 1} 页`,
+  };
+});
 
 const slideImage = document.querySelector("#slideImage");
 const canvasWrap = document.querySelector("#canvasWrap");
@@ -26,6 +32,25 @@ let activeIndex = 0;
 let pointerStartX = null;
 let pointerStartY = null;
 let transitionToken = 0;
+const compactMedia = window.matchMedia("(max-width: 1100px)");
+
+function getSlideSource(slide) {
+  const saveData = navigator.connection?.saveData === true;
+  return compactMedia.matches || saveData ? slide.srcMobile : slide.src;
+}
+
+function decodeImage(image) {
+  if (typeof image.decode === "function") {
+    return image.decode();
+  }
+  if (image.complete && image.naturalWidth > 0) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve, reject) => {
+    image.addEventListener("load", resolve, { once: true });
+    image.addEventListener("error", reject, { once: true });
+  });
+}
 
 function createThumbnail(slide, index, variant = "rail") {
   const button = document.createElement("button");
@@ -35,10 +60,13 @@ function createThumbnail(slide, index, variant = "rail") {
   button.setAttribute("aria-label", `打开${slide.label}`);
 
   const image = document.createElement("img");
-  image.src = slide.src;
+  image.src = slide.thumb;
   image.alt = "";
-  image.loading = index < 3 ? "eager" : "lazy";
+  image.width = 320;
+  image.height = 180;
+  image.loading = variant === "rail" ? "eager" : "lazy";
   image.decoding = "async";
+  image.fetchPriority = "low";
   button.appendChild(image);
 
   const label = document.createElement("span");
@@ -61,11 +89,10 @@ slides.forEach((slide, index) => {
 });
 
 function preloadAround(center) {
-  for (const offset of [-1, 1, 2]) {
-    const index = (center + offset + slideCount) % slideCount;
-    const image = new Image();
-    image.src = slides[index].src;
-  }
+  const index = (center + 1) % slideCount;
+  const image = new Image();
+  image.decoding = "async";
+  image.src = getSlideSource(slides[index]);
 }
 
 function updateActiveThumbnails() {
@@ -86,7 +113,7 @@ function updateHash() {
   }
 }
 
-function showSlide(requestedIndex, options = {}) {
+async function showSlide(requestedIndex, options = {}) {
   const nextIndex = (requestedIndex + slideCount) % slideCount;
   if (nextIndex === activeIndex && options.force !== true) return;
 
@@ -104,16 +131,21 @@ function showSlide(requestedIndex, options = {}) {
   preloadAround(activeIndex);
 
   const nextImage = new Image();
-  nextImage.src = slide.src;
-  nextImage.decode()
-    .catch(() => undefined)
-    .finally(() => {
-      if (token !== transitionToken) return;
-      slideImage.src = slide.src;
-      slideImage.classList.remove("is-changing");
-      canvasWrap.classList.remove("is-loading");
-      slideError.hidden = true;
-    });
+  nextImage.decoding = "async";
+  nextImage.src = getSlideSource(slide);
+
+  try {
+    await decodeImage(nextImage);
+  } catch {
+    nextImage.src = slide.srcFallback;
+    await decodeImage(nextImage).catch(() => undefined);
+  }
+
+  if (token !== transitionToken) return;
+  slideImage.src = nextImage.src;
+  slideImage.classList.remove("is-changing");
+  canvasWrap.classList.remove("is-loading");
+  slideError.hidden = true;
 }
 
 function goPrevious() {
@@ -252,3 +284,39 @@ const initialIndex = hashMatch
   : 0;
 
 showSlide(initialIndex, { force: true });
+
+function scheduleIdle(callback, timeout = 1800) {
+  if ("requestIdleCallback" in window) {
+    window.requestIdleCallback(callback, { timeout });
+  } else {
+    window.setTimeout(callback, timeout);
+  }
+}
+
+function warmSlideCache() {
+  const connection = navigator.connection;
+  const slowNetwork = connection?.saveData === true
+    || /(^|-)2g$/.test(connection?.effectiveType ?? "");
+  if (slowNetwork || document.visibilityState === "hidden") return;
+
+  scheduleIdle(async () => {
+    for (let index = 1; index < slideCount; index += 1) {
+      if (document.visibilityState === "hidden") return;
+      try {
+        await fetch(getSlideSource(slides[index]), { cache: "force-cache" });
+      } catch {
+        return;
+      }
+    }
+  }, 2600);
+}
+
+if ("serviceWorker" in navigator && window.isSecureContext) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js?v=3", { scope: "./" })
+      .then(warmSlideCache)
+      .catch(() => undefined);
+  }, { once: true });
+} else {
+  warmSlideCache();
+}
