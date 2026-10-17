@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow, noarchive">
+    <meta name="referrer" content="no-referrer">
+    <meta name="theme-color" content="#111713">
+    <title>婚恋资金纠纷材料梳理 · 内部审阅</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">H</span>
+          <div class="brand-copy">
+            <p class="eyebrow">内部审阅 · 请勿转发</p>
+            <h1>婚恋资金纠纷材料梳理</h1>
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <button class="utility-button" id="overviewButton" type="button" aria-label="打开页面总览">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+              <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+              <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+              <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+            </svg>
+            <span>总览</span>
+          </button>
+          <button class="icon-button" id="fullscreenButton" type="button" aria-label="进入全屏">
+            <svg class="icon-expand" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path>
+            </svg>
+            <svg class="icon-collapse" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 8h5V3M21 8h-5V3M3 16h5v5M21 16h-5v5"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="sidebar" aria-label="页面缩略图">
+          <div class="sidebar-heading">
+            <span>页面</span>
+            <span>09</span>
+          </div>
+          <div class="thumbnail-list" id="thumbnailList"></div>
+        </aside>
+
+        <section class="stage-shell" aria-label="演示文稿画面">
+          <div class="stage" id="stage">
+            <div class="canvas-wrap" id="canvasWrap">
+              <div class="slide-loading" id="slideLoading" aria-hidden="true"></div>
+              <img
+                class="slide-image"
+                id="slideImage"
+                src="assets/slides/slide-01.png"
+                alt="第 1 页"
+                draggable="false"
+              >
+              <div class="slide-error" id="slideError" hidden>
+                当前页面无法加载，请确认网页资源文件夹完整。
+              </div>
+            </div>
+
+            <button class="stage-arrow stage-arrow-prev" id="previousOverlay" type="button" aria-label="上一页">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m15 18-6-6 6-6"></path>
+              </svg>
+            </button>
+            <button class="stage-arrow stage-arrow-next" id="nextOverlay" type="button" aria-label="下一页">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m9 18 6-6-6-6"></path>
+              </svg>
+            </button>
+          </div>
+        </section>
+      </main>
+
+      <footer class="controlbar">
+        <div class="page-counter" aria-live="polite">
+          <span id="currentPage">01</span>
+          <span class="counter-divider">/</span>
+          <span>09</span>
+        </div>
+
+        <div class="control-actions">
+          <button class="round-button" id="previousButton" type="button" aria-label="上一页">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m15 18-6-6 6-6"></path>
+            </svg>
+          </button>
+          <button class="next-button" id="nextButton" type="button">
+            <span>下一页</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m9 18 6-6-6-6"></path>
+            </svg>
+          </button>
+        </div>
+
+        <p class="keyboard-hint">方向键翻页 · F 全屏</p>
+      </footer>
+    </div>
+
+    <div class="overview" id="overview" hidden>
+      <div class="overview-header">
+        <div>
+          <p class="eyebrow">页面总览</p>
+          <h2>选择要查看的页面</h2>
+        </div>
+        <button class="icon-button overview-close" id="overviewClose" type="button" aria-label="关闭页面总览">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6 6 18M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="overview-grid" id="overviewGrid"></div>
+    </div>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
