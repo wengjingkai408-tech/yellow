@@ -1,4 +1,4 @@
-const slideCount = 9;
+const slideCount = 10;
 
 const evidenceItems = [
   {
@@ -31,8 +31,20 @@ const evidenceItems = [
   },
 ];
 
-const slides = Array.from({ length: slideCount }, (_, index) => {
-  const id = String(index + 1).padStart(2, "0");
+const slideIds = [
+  "01",
+  "02",
+  "03",
+  "04",
+  "05",
+  "06",
+  "07",
+  "08",
+  "09-illustration",
+  "09",
+];
+
+const slides = slideIds.map((id, index) => {
   return {
     number: index + 1,
     src: `assets/slides-webp/slide-${id}.webp`,
