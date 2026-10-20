@@ -14,7 +14,7 @@
     <link rel="preload" as="image" type="image/webp"
       href="assets/slides-mobile/slide-01.webp"
       media="(max-width: 1100px)" fetchpriority="high">
-    <link rel="stylesheet" href="styles.css?v=3">
+    <link rel="stylesheet" href="styles.css?v=4">
   </head>
   <body>
     <div class="app">
@@ -28,6 +28,13 @@
         </div>
 
         <div class="top-actions">
+          <button class="utility-button evidence-quick-button" id="evidenceQuickButton" type="button" aria-label="打开证据材料">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z"></path>
+            </svg>
+            <span class="evidence-quick-label">证据材料</span>
+            <b class="evidence-quick-count">04</b>
+          </button>
           <button class="utility-button" id="overviewButton" type="button" aria-label="打开页面总览">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <rect x="3" y="3" width="7" height="7" rx="1"></rect>
@@ -50,11 +57,50 @@
 
       <main class="workspace">
         <aside class="sidebar" aria-label="页面缩略图">
-          <div class="sidebar-heading">
-            <span>页面</span>
-            <span>09</span>
+          <div class="sidebar-scroll">
+            <section class="sidebar-section">
+              <div class="sidebar-heading">
+                <span>页面</span>
+                <span>09</span>
+              </div>
+              <div class="thumbnail-list" id="thumbnailList"></div>
+            </section>
+
+            <section class="sidebar-section evidence-navigation">
+              <button
+                class="evidence-toggle"
+                id="evidenceToggle"
+                type="button"
+                aria-expanded="false"
+                aria-controls="evidenceSubmenu"
+              >
+                <span class="evidence-toggle-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z"></path>
+                  </svg>
+                </span>
+                <span class="evidence-toggle-copy">
+                  <small>二级菜单</small>
+                  <strong>证据材料</strong>
+                </span>
+                <span class="evidence-toggle-count">04</span>
+                <svg class="evidence-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m8 10 4 4 4-4"></path>
+                </svg>
+              </button>
+
+              <div class="evidence-submenu" id="evidenceSubmenu" hidden>
+                <img
+                  class="evidence-side-illustration"
+                  src="assets/evidence/evidence-illustration.svg"
+                  alt=""
+                  width="960"
+                  height="360"
+                >
+                <div id="evidenceSideList"></div>
+              </div>
+            </section>
           </div>
-          <div class="thumbnail-list" id="thumbnailList"></div>
         </aside>
 
         <section class="stage-shell" aria-label="演示文稿画面">
@@ -131,6 +177,88 @@
       <div class="overview-grid" id="overviewGrid"></div>
     </div>
 
-    <script src="app.js?v=3" defer></script>
+    <section class="evidence-panel" id="evidencePanel" hidden aria-labelledby="evidencePanelTitle">
+      <div class="evidence-panel-inner">
+        <header class="evidence-panel-header">
+          <div>
+            <p class="eyebrow">补充材料 · 二级菜单</p>
+            <h2 id="evidencePanelTitle">证据材料</h2>
+            <p class="evidence-panel-subtitle">4 份材料，点击任意一项查看大图。</p>
+          </div>
+          <button class="icon-button" id="evidencePanelClose" type="button" aria-label="关闭证据材料">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12"></path>
+            </svg>
+          </button>
+        </header>
+
+        <div class="evidence-hero">
+          <img
+            src="assets/evidence/evidence-illustration.svg"
+            alt="法院、文件夹和判决文书的插画"
+            width="960"
+            height="360"
+          >
+          <div class="evidence-hero-copy">
+            <p class="eyebrow">材料归档</p>
+            <h3>现场记录与法院判决</h3>
+            <p>图片按材料性质分组，保留原始信息，进入大图后可继续切换和缩放。</p>
+          </div>
+        </div>
+
+        <div class="evidence-grid" id="evidenceGrid"></div>
+      </div>
+    </section>
+
+    <div
+      class="evidence-lightbox"
+      id="evidenceLightbox"
+      hidden
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="evidenceLightboxTitle"
+    >
+      <div class="lightbox-toolbar">
+        <p class="lightbox-counter" id="evidenceLightboxCounter">01 / 04</p>
+        <div class="lightbox-tools">
+          <button class="icon-button" id="evidenceZoomButton" type="button" aria-label="切换原始尺寸" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="m20 20-4-4M8 11h6M11 8v6"></path>
+            </svg>
+          </button>
+          <button class="icon-button" id="evidenceLightboxClose" type="button" aria-label="关闭大图">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="lightbox-stage" id="lightboxStage">
+        <img id="evidenceLargeImage" src="" alt="">
+      </div>
+
+      <footer class="lightbox-footer">
+        <div class="lightbox-caption">
+          <p class="eyebrow" id="evidenceLightboxCategory">现场记录</p>
+          <h2 id="evidenceLightboxTitle">对峙现场</h2>
+        </div>
+        <div class="lightbox-navigation">
+          <button class="round-button" id="evidencePreviousButton" type="button" aria-label="上一份材料">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m15 18-6-6 6-6"></path>
+            </svg>
+          </button>
+          <button class="round-button" id="evidenceNextButton" type="button" aria-label="下一份材料">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m9 18 6-6-6-6"></path>
+            </svg>
+          </button>
+        </div>
+      </footer>
+    </div>
+
+    <script src="app.js?v=4" defer></script>
   </body>
 </html>

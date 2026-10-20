@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="360" viewBox="0 0 960 360" role="img" aria-labelledby="title description">
+  <title id="title">Evidence and court records illustration</title>
+  <desc id="description">An editorial illustration of a folder, court building, documents, and a seal.</desc>
+  <rect width="960" height="360" fill="#1d3a31"/>
+  <path d="M0 294H960V360H0Z" fill="#162d26"/>
+  <path d="M116 286V171L228 103L340 171V286" fill="none" stroke="#d6ded9" stroke-width="7"/>
+  <path d="M156 286V187H300V286M184 204V286M228 204V286M272 204V286" fill="none" stroke="#d6ded9" stroke-width="5"/>
+  <path d="M99 292H359" stroke="#cd5b49" stroke-width="10"/>
+  <path d="M397 117H622L669 151V302H397Z" fill="#f5f1e8"/>
+  <path d="M622 117V151H669" fill="none" stroke="#cd5b49" stroke-width="7"/>
+  <path d="M442 190H618M442 222H618M442 254H572" stroke="#68706a" stroke-width="7"/>
+  <path d="M360 221H730L790 265V320H292L360 221Z" fill="#c46a57"/>
+  <path d="M360 221H730L669 268H292Z" fill="#e18c7e"/>
+  <circle cx="728" cy="126" r="57" fill="none" stroke="#d6ded9" stroke-width="7"/>
+  <path d="M699 119L722 142L761 99" fill="none" stroke="#d6ded9" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M768 55H894V132H827L802 155V132H768Z" fill="#d6ded9"/>
+  <path d="M792 79H870M792 102H850" stroke="#1d3a31" stroke-width="6"/>
+  <circle cx="872" cy="282" r="9" fill="#e9a69a"/>
+  <circle cx="918" cy="252" r="5" fill="#d6ded9"/>
+</svg>
