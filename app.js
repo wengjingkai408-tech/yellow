@@ -96,8 +96,6 @@ const stage = document.querySelector("#stage");
 const slideError = document.querySelector("#slideError");
 const evidenceQuickButton = document.querySelector("#evidenceQuickButton");
 const evidenceToggle = document.querySelector("#evidenceToggle");
-const evidenceSubmenu = document.querySelector("#evidenceSubmenu");
-const evidenceSideList = document.querySelector("#evidenceSideList");
 const evidencePanel = document.querySelector("#evidencePanel");
 const evidencePanelClose = document.querySelector("#evidencePanelClose");
 const evidenceGrid = document.querySelector("#evidenceGrid");
@@ -118,6 +116,7 @@ let pointerStartX = null;
 let pointerStartY = null;
 let transitionToken = 0;
 let evidenceReturnFocus = evidenceQuickButton;
+let evidencePanelReturnFocus = evidenceQuickButton;
 const compactMedia = window.matchMedia("(max-width: 1100px)");
 
 function getSlideSource(slide) {
@@ -174,9 +173,10 @@ slides.forEach((slide, index) => {
   overviewGrid.appendChild(createThumbnail(slide, index, "overview"));
 });
 
-function createEvidenceEntry(item, index, variant) {
+function createEvidenceEntry(item, index) {
   const button = document.createElement("button");
   button.type = "button";
+  button.className = "evidence-card";
   button.dataset.evidenceIndex = String(index);
   button.setAttribute("aria-label", `查看${item.title}大图`);
 
@@ -186,34 +186,23 @@ function createEvidenceEntry(item, index, variant) {
   image.width = 320;
   image.height = 400;
   image.decoding = "async";
-  image.loading = variant === "side" ? "eager" : "lazy";
+  image.loading = "lazy";
 
-  if (variant === "side") {
-    button.className = "evidence-menu-item";
-    const copy = document.createElement("span");
-    copy.textContent = item.title;
-    const meta = document.createElement("small");
-    meta.textContent = item.category;
-    copy.appendChild(meta);
-    button.append(image, copy);
-  } else {
-    button.className = "evidence-card";
-    const media = document.createElement("div");
-    media.className = "evidence-card-media";
-    media.appendChild(image);
-    const copy = document.createElement("div");
-    copy.className = "evidence-card-copy";
-    const title = document.createElement("strong");
-    title.textContent = item.title;
-    const category = document.createElement("span");
-    category.textContent = item.category;
-    copy.append(title, category);
-    button.append(media, copy);
-  }
+  const media = document.createElement("div");
+  media.className = "evidence-card-media";
+  media.appendChild(image);
+  const copy = document.createElement("div");
+  copy.className = "evidence-card-copy";
+  const title = document.createElement("strong");
+  title.textContent = item.title;
+  const category = document.createElement("span");
+  category.textContent = item.category;
+  copy.append(title, category);
+  button.append(media, copy);
 
   button.addEventListener("click", () => {
-    evidenceReturnFocus = variant === "side" ? button : evidenceQuickButton;
-    if (variant === "card") closeEvidencePanel(false);
+    evidenceReturnFocus = evidencePanelReturnFocus;
+    closeEvidencePanel(false);
     openEvidenceLightbox(index);
   });
 
@@ -221,8 +210,7 @@ function createEvidenceEntry(item, index, variant) {
 }
 
 evidenceItems.forEach((item, index) => {
-  evidenceSideList.appendChild(createEvidenceEntry(item, index, "side"));
-  evidenceGrid.appendChild(createEvidenceEntry(item, index, "card"));
+  evidenceGrid.appendChild(createEvidenceEntry(item, index));
 });
 
 function syncEvidenceOverlayState() {
@@ -230,8 +218,9 @@ function syncEvidenceOverlayState() {
   document.body.classList.toggle("evidence-overlay-open", isOpen);
 }
 
-function openEvidencePanel() {
+function openEvidencePanel(trigger = evidenceQuickButton) {
   if (!overview.hidden) closeOverview();
+  evidencePanelReturnFocus = trigger;
   evidencePanel.hidden = false;
   syncEvidenceOverlayState();
   evidencePanelClose.focus();
@@ -240,7 +229,7 @@ function openEvidencePanel() {
 function closeEvidencePanel(restoreFocus = true) {
   evidencePanel.hidden = true;
   syncEvidenceOverlayState();
-  if (restoreFocus) evidenceQuickButton.focus();
+  if (restoreFocus) evidencePanelReturnFocus.focus();
 }
 
 function setEvidenceZoom(zoomed) {
@@ -381,13 +370,9 @@ async function toggleFullscreen() {
 overviewButton.addEventListener("click", openOverview);
 overviewClose.addEventListener("click", closeOverview);
 fullscreenButton.addEventListener("click", toggleFullscreen);
-evidenceQuickButton.addEventListener("click", openEvidencePanel);
+evidenceQuickButton.addEventListener("click", () => openEvidencePanel(evidenceQuickButton));
 evidencePanelClose.addEventListener("click", closeEvidencePanel);
-evidenceToggle.addEventListener("click", () => {
-  const expanded = evidenceToggle.getAttribute("aria-expanded") === "true";
-  evidenceToggle.setAttribute("aria-expanded", String(!expanded));
-  evidenceSubmenu.hidden = expanded;
-});
+evidenceToggle.addEventListener("click", () => openEvidencePanel(evidenceToggle));
 evidenceLightboxClose.addEventListener("click", closeEvidenceLightbox);
 evidencePreviousButton.addEventListener("click", () => moveEvidence(-1));
 evidenceNextButton.addEventListener("click", () => moveEvidence(1));
@@ -555,7 +540,7 @@ function warmSlideCache() {
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js?v=7", { scope: "./" })
+    navigator.serviceWorker.register("sw.js?v=8", { scope: "./" })
       .then(warmSlideCache)
       .catch(() => undefined);
   }, { once: true });

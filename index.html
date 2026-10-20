@@ -14,7 +14,7 @@
     <link rel="preload" as="image" type="image/webp"
       href="assets/slides-mobile/slide-01.webp"
       media="(max-width: 1100px)" fetchpriority="high">
-    <link rel="stylesheet" href="styles.css?v=7">
+    <link rel="stylesheet" href="styles.css?v=8">
   </head>
   <body>
     <div class="app">
@@ -71,8 +71,7 @@
                 class="evidence-toggle"
                 id="evidenceToggle"
                 type="button"
-                aria-expanded="false"
-                aria-controls="evidenceSubmenu"
+                aria-haspopup="dialog"
               >
                 <span class="evidence-toggle-icon">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -80,25 +79,14 @@
                   </svg>
                 </span>
                 <span class="evidence-toggle-copy">
-                  <small>二级菜单</small>
+                  <small>材料目录</small>
                   <strong>证据材料</strong>
                 </span>
                 <span class="evidence-toggle-count">04</span>
-                <svg class="evidence-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="m8 10 4 4 4-4"></path>
+                <svg class="evidence-open-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M7 17 17 7M8 7h9v9"></path>
                 </svg>
               </button>
-
-              <div class="evidence-submenu" id="evidenceSubmenu" hidden>
-                <img
-                  class="evidence-side-illustration"
-                  src="assets/evidence/evidence-illustration.svg"
-                  alt=""
-                  width="960"
-                  height="360"
-                >
-                <div id="evidenceSideList"></div>
-              </div>
             </section>
           </div>
         </aside>
@@ -259,6 +247,6 @@
       </footer>
     </div>
 
-    <script src="app.js?v=7" defer></script>
+    <script src="app.js?v=8" defer></script>
   </body>
 </html>
