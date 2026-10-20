@@ -1,36 +1,5 @@
 const slideCount = 13;
 
-const evidenceItems = [
-  {
-    title: "对峙现场",
-    category: "现场记录",
-    src: "assets/evidence/confrontation.webp",
-    thumb: "assets/evidence/thumbs/confrontation-thumb.webp",
-    alt: "对峙现场图片",
-  },
-  {
-    title: "法院判决",
-    category: "民事判决书",
-    src: "assets/evidence/judgment-cover.webp",
-    thumb: "assets/evidence/thumbs/judgment-cover-thumb.webp",
-    alt: "法院判决书封面",
-  },
-  {
-    title: "判决内容一",
-    category: "法院认定",
-    src: "assets/evidence/judgment-page-01.webp",
-    thumb: "assets/evidence/thumbs/judgment-page-01-thumb.webp",
-    alt: "法院判决内容第一页",
-  },
-  {
-    title: "判决内容二",
-    category: "判决理由",
-    src: "assets/evidence/judgment-page-02.webp",
-    thumb: "assets/evidence/thumbs/judgment-page-02-thumb.webp",
-    alt: "法院判决内容第二页",
-  },
-];
-
 const standardSlide = (id) => ({
   src: `assets/slides-webp/slide-${id}.webp`,
   srcMobile: `assets/slides-mobile/slide-${id}.webp`,
@@ -94,29 +63,10 @@ const overviewClose = document.querySelector("#overviewClose");
 const fullscreenButton = document.querySelector("#fullscreenButton");
 const stage = document.querySelector("#stage");
 const slideError = document.querySelector("#slideError");
-const evidenceQuickButton = document.querySelector("#evidenceQuickButton");
-const evidenceToggle = document.querySelector("#evidenceToggle");
-const evidencePanel = document.querySelector("#evidencePanel");
-const evidencePanelClose = document.querySelector("#evidencePanelClose");
-const evidenceGrid = document.querySelector("#evidenceGrid");
-const evidenceLightbox = document.querySelector("#evidenceLightbox");
-const evidenceLightboxClose = document.querySelector("#evidenceLightboxClose");
-const evidenceLightboxCounter = document.querySelector("#evidenceLightboxCounter");
-const evidenceLightboxCategory = document.querySelector("#evidenceLightboxCategory");
-const evidenceLightboxTitle = document.querySelector("#evidenceLightboxTitle");
-const evidenceLargeImage = document.querySelector("#evidenceLargeImage");
-const evidencePreviousButton = document.querySelector("#evidencePreviousButton");
-const evidenceNextButton = document.querySelector("#evidenceNextButton");
-const evidenceZoomButton = document.querySelector("#evidenceZoomButton");
-const lightboxStage = document.querySelector("#lightboxStage");
-
 let activeIndex = 0;
-let activeEvidenceIndex = 0;
 let pointerStartX = null;
 let pointerStartY = null;
 let transitionToken = 0;
-let evidenceReturnFocus = evidenceQuickButton;
-let evidencePanelReturnFocus = evidenceQuickButton;
 const compactMedia = window.matchMedia("(max-width: 1100px)");
 
 function getSlideSource(slide) {
@@ -172,105 +122,6 @@ slides.forEach((slide, index) => {
   thumbnailList.appendChild(createThumbnail(slide, index));
   overviewGrid.appendChild(createThumbnail(slide, index, "overview"));
 });
-
-function createEvidenceEntry(item, index) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "evidence-card";
-  button.dataset.evidenceIndex = String(index);
-  button.setAttribute("aria-label", `查看${item.title}大图`);
-
-  const image = document.createElement("img");
-  image.src = item.thumb;
-  image.alt = "";
-  image.width = 320;
-  image.height = 400;
-  image.decoding = "async";
-  image.loading = "lazy";
-
-  const media = document.createElement("div");
-  media.className = "evidence-card-media";
-  media.appendChild(image);
-  const copy = document.createElement("div");
-  copy.className = "evidence-card-copy";
-  const title = document.createElement("strong");
-  title.textContent = item.title;
-  const category = document.createElement("span");
-  category.textContent = item.category;
-  copy.append(title, category);
-  button.append(media, copy);
-
-  button.addEventListener("click", () => {
-    evidenceReturnFocus = evidencePanelReturnFocus;
-    closeEvidencePanel(false);
-    openEvidenceLightbox(index);
-  });
-
-  return button;
-}
-
-evidenceItems.forEach((item, index) => {
-  evidenceGrid.appendChild(createEvidenceEntry(item, index));
-});
-
-function syncEvidenceOverlayState() {
-  const isOpen = !evidencePanel.hidden || !evidenceLightbox.hidden;
-  document.body.classList.toggle("evidence-overlay-open", isOpen);
-}
-
-function openEvidencePanel(trigger = evidenceQuickButton) {
-  if (!overview.hidden) closeOverview();
-  evidencePanelReturnFocus = trigger;
-  evidencePanel.hidden = false;
-  syncEvidenceOverlayState();
-  evidencePanelClose.focus();
-}
-
-function closeEvidencePanel(restoreFocus = true) {
-  evidencePanel.hidden = true;
-  syncEvidenceOverlayState();
-  if (restoreFocus) evidencePanelReturnFocus.focus();
-}
-
-function setEvidenceZoom(zoomed) {
-  lightboxStage.classList.toggle("is-zoomed", zoomed);
-  evidenceZoomButton.setAttribute("aria-pressed", String(zoomed));
-  evidenceZoomButton.setAttribute("aria-label", zoomed ? "适应屏幕" : "切换原始尺寸");
-  evidenceLargeImage.setAttribute("aria-label", zoomed ? "缩小图片" : "放大图片");
-  if (!zoomed) lightboxStage.scrollTo({ top: 0, left: 0 });
-}
-
-function updateEvidenceLightbox() {
-  const item = evidenceItems[activeEvidenceIndex];
-  evidenceLargeImage.src = item.src;
-  evidenceLargeImage.alt = item.alt;
-  evidenceLightboxTitle.textContent = item.title;
-  evidenceLightboxCategory.textContent = item.category;
-  evidenceLightboxCounter.textContent =
-    `${String(activeEvidenceIndex + 1).padStart(2, "0")} / ${String(evidenceItems.length).padStart(2, "0")}`;
-  setEvidenceZoom(false);
-}
-
-function openEvidenceLightbox(index) {
-  activeEvidenceIndex = (index + evidenceItems.length) % evidenceItems.length;
-  updateEvidenceLightbox();
-  evidenceLightbox.hidden = false;
-  syncEvidenceOverlayState();
-  evidenceLightboxClose.focus();
-}
-
-function closeEvidenceLightbox() {
-  evidenceLightbox.hidden = true;
-  setEvidenceZoom(false);
-  syncEvidenceOverlayState();
-  evidenceReturnFocus?.focus();
-}
-
-function moveEvidence(direction) {
-  activeEvidenceIndex =
-    (activeEvidenceIndex + direction + evidenceItems.length) % evidenceItems.length;
-  updateEvidenceLightbox();
-}
 
 function preloadAround(center) {
   const index = (center + 1) % slideCount;
@@ -370,25 +221,8 @@ async function toggleFullscreen() {
 overviewButton.addEventListener("click", openOverview);
 overviewClose.addEventListener("click", closeOverview);
 fullscreenButton.addEventListener("click", toggleFullscreen);
-evidenceQuickButton.addEventListener("click", () => openEvidencePanel(evidenceQuickButton));
-evidencePanelClose.addEventListener("click", closeEvidencePanel);
-evidenceToggle.addEventListener("click", () => openEvidencePanel(evidenceToggle));
-evidenceLightboxClose.addEventListener("click", closeEvidenceLightbox);
-evidencePreviousButton.addEventListener("click", () => moveEvidence(-1));
-evidenceNextButton.addEventListener("click", () => moveEvidence(1));
-evidenceZoomButton.addEventListener("click", () => {
-  setEvidenceZoom(!lightboxStage.classList.contains("is-zoomed"));
-});
-evidenceLargeImage.addEventListener("click", () => {
-  setEvidenceZoom(!lightboxStage.classList.contains("is-zoomed"));
-});
-
 overview.addEventListener("click", (event) => {
   if (event.target === overview) closeOverview();
-});
-
-evidencePanel.addEventListener("click", (event) => {
-  if (event.target === evidencePanel) closeEvidencePanel();
 });
 
 slideImage.addEventListener("error", () => {
@@ -410,32 +244,6 @@ document.addEventListener("keydown", (event) => {
   const isTyping = target instanceof HTMLElement
     && (target.matches("input, textarea, select") || target.isContentEditable);
   if (isTyping) return;
-
-  if (!evidenceLightbox.hidden) {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      closeEvidenceLightbox();
-      return;
-    }
-    if (event.key === "ArrowLeft" || event.key === "PageUp") {
-      event.preventDefault();
-      moveEvidence(-1);
-      return;
-    }
-    if (event.key === "ArrowRight" || event.key === "PageDown") {
-      event.preventDefault();
-      moveEvidence(1);
-      return;
-    }
-  }
-
-  if (!evidencePanel.hidden) {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      closeEvidencePanel();
-    }
-    return;
-  }
 
   if (event.key === "Escape" && !overview.hidden) {
     closeOverview();
@@ -540,7 +348,7 @@ function warmSlideCache() {
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js?v=8", { scope: "./" })
+    navigator.serviceWorker.register("sw.js?v=9", { scope: "./" })
       .then(warmSlideCache)
       .catch(() => undefined);
   }, { once: true });
