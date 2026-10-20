@@ -1,4 +1,4 @@
-const slideCount = 10;
+const slideCount = 13;
 
 const evidenceItems = [
   {
@@ -31,29 +31,53 @@ const evidenceItems = [
   },
 ];
 
-const slideIds = [
-  "01",
-  "02",
-  "03",
-  "04",
-  "05",
-  "06",
-  "07",
-  "08",
-  "09-illustration",
-  "09",
-];
-
-const slides = slideIds.map((id, index) => {
-  return {
-    number: index + 1,
-    src: `assets/slides-webp/slide-${id}.webp`,
-    srcMobile: `assets/slides-mobile/slide-${id}.webp`,
-    srcFallback: `assets/slides/slide-${id}.png`,
-    thumb: `assets/thumbs-webp/slide-${id}.webp`,
-    label: `第 ${index + 1} 页`,
-  };
+const standardSlide = (id) => ({
+  src: `assets/slides-webp/slide-${id}.webp`,
+  srcMobile: `assets/slides-mobile/slide-${id}.webp`,
+  srcFallback: `assets/slides/slide-${id}.png`,
+  thumb: `assets/thumbs-webp/slide-${id}.webp`,
+  kind: "slide",
 });
+
+const evidenceSlide = (fileName, thumb, label) => ({
+  src: `assets/evidence/slides/${fileName}.png`,
+  srcMobile: `assets/evidence/slides/${fileName}.png`,
+  srcFallback: `assets/evidence/slides/${fileName}.png`,
+  thumb,
+  kind: "evidence",
+  label,
+});
+
+const slides = [
+  ...Array.from({ length: 8 }, (_, index) => (
+    standardSlide(String(index + 1).padStart(2, "0"))
+  )),
+  evidenceSlide(
+    "confrontation",
+    "assets/evidence/thumbs/confrontation-thumb.webp",
+    "第 9 页 对峙现场",
+  ),
+  evidenceSlide(
+    "judgment-cover",
+    "assets/evidence/thumbs/judgment-cover-thumb.webp",
+    "第 10 页 法院判决",
+  ),
+  evidenceSlide(
+    "judgment-page-01",
+    "assets/evidence/thumbs/judgment-page-01-thumb.webp",
+    "第 11 页 判决内容一",
+  ),
+  evidenceSlide(
+    "judgment-page-02",
+    "assets/evidence/thumbs/judgment-page-02-thumb.webp",
+    "第 12 页 判决内容二",
+  ),
+  standardSlide("09"),
+].map((slide, index) => ({
+  ...slide,
+  number: index + 1,
+  label: slide.label ?? `第 ${index + 1} 页`,
+}));
 
 const slideImage = document.querySelector("#slideImage");
 const canvasWrap = document.querySelector("#canvasWrap");
@@ -294,6 +318,7 @@ async function showSlide(requestedIndex, options = {}) {
 
   currentPage.textContent = String(slide.number).padStart(2, "0");
   slideImage.alt = slide.label;
+  canvasWrap.classList.toggle("is-evidence-slide", slide.kind === "evidence");
   canvasWrap.classList.add("is-loading");
   slideImage.classList.add("is-changing");
   slideError.hidden = true;

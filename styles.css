@@ -297,6 +297,10 @@ h1 {
   box-shadow: var(--shadow);
 }
 
+.canvas-wrap.is-evidence-slide {
+  background: #0b100d;
+}
+
 .slide-image {
   display: block;
   width: 100%;
