@@ -555,7 +555,7 @@ function warmSlideCache() {
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js?v=4", { scope: "./" })
+    navigator.serviceWorker.register("sw.js?v=7", { scope: "./" })
       .then(warmSlideCache)
       .catch(() => undefined);
   }, { once: true });
