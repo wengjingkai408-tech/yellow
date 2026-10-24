@@ -1,0 +1,72 @@
+@media (max-width: 760px) {
+  .topbar {
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  .brand {
+    gap: 8px;
+  }
+
+  .brand-copy h1 {
+    max-width: none;
+    font-size: 19px;
+    letter-spacing: 0;
+  }
+
+  .top-actions {
+    flex: 0 0 auto;
+    gap: 5px;
+  }
+
+  .utility-button {
+    width: auto;
+    height: 36px;
+    flex-shrink: 0;
+    gap: 5px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  .utility-button span {
+    display: inline;
+  }
+
+  .utility-button svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .top-actions .icon-button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .library-page {
+    inset-block-start: 62px;
+  }
+}
+
+@media (max-width: 420px) {
+  .brand {
+    gap: 7px;
+  }
+
+  .brand-copy h1 {
+    font-size: 18px;
+  }
+
+  .top-actions {
+    gap: 4px;
+  }
+
+  .utility-button {
+    gap: 4px;
+    padding-inline: 6px;
+  }
+
+  .top-actions .icon-button {
+    width: 34px;
+    height: 34px;
+  }
+}

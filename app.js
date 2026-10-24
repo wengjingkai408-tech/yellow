@@ -85,18 +85,14 @@ const nextButton = document.querySelector("#nextButton");
 const previousOverlay = document.querySelector("#previousOverlay");
 const nextOverlay = document.querySelector("#nextOverlay");
 const thumbnailList = document.querySelector("#thumbnailList");
-const overview = document.querySelector("#overview");
 const overviewGrid = document.querySelector("#overviewGrid");
 const overviewButton = document.querySelector("#overviewButton");
-const overviewClose = document.querySelector("#overviewClose");
 const fullscreenButton = document.querySelector("#fullscreenButton");
 const contentButton = document.querySelector("#contentButton");
-const contentPage = document.querySelector("#contentPage");
-const contentPageClose = document.querySelector("#contentPageClose");
-const imagesTab = document.querySelector("#imagesTab");
-const videosTab = document.querySelector("#videosTab");
-const imagesSection = document.querySelector("#imagesSection");
-const videosSection = document.querySelector("#videosSection");
+const libraryPage = document.querySelector("#libraryPage");
+const libraryPageClose = document.querySelector("#libraryPageClose");
+const overviewSection = document.querySelector("#overviewSection");
+const contentSection = document.querySelector("#contentSection");
 const contentImageGrid = document.querySelector("#contentImageGrid");
 const contentVideoGrid = document.querySelector("#contentVideoGrid");
 const mediaViewer = document.querySelector("#mediaViewer");
@@ -123,6 +119,7 @@ let contentCacheWarmed = false;
 let pointerStartX = null;
 let pointerStartY = null;
 let transitionToken = 0;
+let libraryScrollFrame = 0;
 const compactMedia = window.matchMedia("(max-width: 1100px)");
 
 function getSlideSource(slide) {
@@ -167,8 +164,8 @@ function createThumbnail(slide, index, variant = "rail") {
   button.appendChild(label);
 
   button.addEventListener("click", () => {
+    if (variant === "overview") closeLibrary(false);
     showSlide(index);
-    if (variant === "overview") closeOverview();
   });
 
   return button;
@@ -237,32 +234,53 @@ contentVideos.forEach((item, index) => {
   contentVideoGrid.appendChild(createContentCard(item, index, "videos"));
 });
 
-function showContentTab(type) {
-  activeContentType = type;
-  const showsImages = type === "images";
-  imagesTab.classList.toggle("is-active", showsImages);
-  videosTab.classList.toggle("is-active", !showsImages);
-  imagesTab.setAttribute("aria-selected", String(showsImages));
-  videosTab.setAttribute("aria-selected", String(!showsImages));
-  imagesSection.hidden = !showsImages;
-  videosSection.hidden = showsImages;
+function updateLibraryNavigation(section) {
+  const showsOverview = section === "overview";
+  overviewButton.classList.toggle("is-active", showsOverview);
+  contentButton.classList.toggle("is-active", !showsOverview);
 }
 
-function openContentPage() {
-  if (!overview.hidden) closeOverview();
-  contentPage.hidden = false;
-  contentButton.classList.add("is-active");
-  document.body.classList.add("content-page-open");
-  showContentTab("images");
-  contentPageClose.focus();
+function scrollLibraryTo(section, behavior = "smooth") {
+  const target = section === "content" ? contentSection : overviewSection;
+  const pageTop = libraryPage.getBoundingClientRect().top;
+  const targetTop = target.getBoundingClientRect().top - pageTop + libraryPage.scrollTop - 18;
+  libraryPage.scrollTo({ top: Math.max(0, targetTop), behavior });
+  updateLibraryNavigation(section);
+}
+
+function openLibrary(section = "overview", options = {}) {
+  const nextSection = section === "content" ? "content" : "overview";
+  libraryPage.hidden = false;
+  document.body.classList.add("library-page-open");
+  updateLibraryNavigation(nextSection);
+  if (options.history !== false) {
+    history.replaceState(null, "", `#${nextSection}`);
+  }
+
+  const behavior = options.instant ? "auto" : "smooth";
+  if (options.top) {
+    requestAnimationFrame(() => libraryPage.scrollTo({ top: 0, behavior }));
+  } else {
+    requestAnimationFrame(() => scrollLibraryTo(nextSection, behavior));
+  }
   warmFirstContentVideo();
 }
 
-function closeContentPage(restoreFocus = true) {
-  contentPage.hidden = true;
+function closeLibrary(restoreFocus = true) {
+  libraryPage.hidden = true;
+  document.body.classList.remove("library-page-open");
+  overviewButton.classList.remove("is-active");
   contentButton.classList.remove("is-active");
-  document.body.classList.remove("content-page-open");
-  if (restoreFocus) contentButton.focus();
+  history.replaceState(null, "", `#slide-${activeIndex + 1}`);
+  if (restoreFocus) overviewButton.focus();
+}
+
+function openOverview() {
+  openLibrary("overview");
+}
+
+function openContentPage() {
+  openLibrary("content");
 }
 
 function currentMediaItems() {
@@ -430,7 +448,7 @@ async function showSlide(requestedIndex, options = {}) {
   slideImage.classList.add("is-changing");
   slideError.hidden = true;
   updateActiveThumbnails();
-  updateHash();
+  if (options.updateHash !== false) updateHash();
   preloadAround(activeIndex);
 
   const nextImage = new Image();
@@ -459,19 +477,6 @@ function goNext() {
   showSlide(activeIndex + 1);
 }
 
-function openOverview() {
-  if (!contentPage.hidden) closeContentPage(false);
-  overview.hidden = false;
-  document.body.classList.add("overview-open");
-  overviewClose.focus();
-}
-
-function closeOverview() {
-  overview.hidden = true;
-  document.body.classList.remove("overview-open");
-  overviewButton.focus();
-}
-
 async function toggleFullscreen() {
   try {
     if (!document.fullscreenElement) {
@@ -487,12 +492,9 @@ async function toggleFullscreen() {
 [previousButton, previousOverlay].forEach((button) => button.addEventListener("click", goPrevious));
 [nextButton, nextOverlay].forEach((button) => button.addEventListener("click", goNext));
 overviewButton.addEventListener("click", openOverview);
-overviewClose.addEventListener("click", closeOverview);
 fullscreenButton.addEventListener("click", toggleFullscreen);
 contentButton.addEventListener("click", openContentPage);
-contentPageClose.addEventListener("click", closeContentPage);
-imagesTab.addEventListener("click", () => showContentTab("images"));
-videosTab.addEventListener("click", () => showContentTab("videos"));
+libraryPageClose.addEventListener("click", closeLibrary);
 mediaViewerClose.addEventListener("click", closeMediaViewer);
 mediaPreviousButton.addEventListener("click", () => stepMedia(-1));
 mediaNextButton.addEventListener("click", () => stepMedia(1));
@@ -500,8 +502,16 @@ mediaViewerImage.addEventListener("click", () => {
   if (mediaViewerImage.hidden) return;
   mediaViewerStage.classList.toggle("is-image-zoomed");
 });
-overview.addEventListener("click", (event) => {
-  if (event.target === overview) closeOverview();
+libraryPage.addEventListener("scroll", () => {
+  if (libraryScrollFrame) return;
+  libraryScrollFrame = requestAnimationFrame(() => {
+    libraryScrollFrame = 0;
+    const pageTop = libraryPage.getBoundingClientRect().top;
+    const section = contentSection.getBoundingClientRect().top <= pageTop + 160
+      ? "content"
+      : "overview";
+    updateLibraryNavigation(section);
+  });
 });
 
 slideImage.addEventListener("error", () => {
@@ -543,20 +553,13 @@ document.addEventListener("keydown", (event) => {
     return;
   }
 
-  if (!contentPage.hidden) {
+  if (!libraryPage.hidden) {
     if (event.key === "Escape") {
       event.preventDefault();
-      closeContentPage();
+      closeLibrary();
     }
     return;
   }
-
-  if (event.key === "Escape" && !overview.hidden) {
-    closeOverview();
-    return;
-  }
-
-  if (!overview.hidden) return;
 
   switch (event.key) {
     case "ArrowLeft":
@@ -624,12 +627,25 @@ stage.addEventListener("pointercancel", () => {
   pointerStartY = null;
 });
 
-const hashMatch = window.location.hash.match(/^#slide-(\d+)$/);
-const initialIndex = hashMatch
-  ? Math.min(Math.max(Number(hashMatch[1]) - 1, 0), slideCount - 1)
+const slideHashMatch = window.location.hash.match(/^#slide-(\d+)$/);
+const libraryHashMatch = window.location.hash.match(/^#(overview|content)$/);
+const initialIndex = slideHashMatch
+  ? Math.min(Math.max(Number(slideHashMatch[1]) - 1, 0), slideCount - 1)
   : 0;
 
-showSlide(initialIndex, { force: true });
+showSlide(initialIndex, { force: true, updateHash: false });
+
+if (slideHashMatch) {
+  libraryPage.hidden = true;
+  document.body.classList.remove("library-page-open");
+  updateHash();
+} else {
+  openLibrary(libraryHashMatch?.[1] ?? "overview", {
+    instant: true,
+    history: true,
+    top: !libraryHashMatch,
+  });
+}
 
 function scheduleIdle(callback, timeout = 1800) {
   if ("requestIdleCallback" in window) {
@@ -659,7 +675,7 @@ function warmSlideCache() {
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js?v=10", { scope: "./" })
+    navigator.serviceWorker.register("sw-v12.js", { scope: "./" })
       .then(warmSlideCache)
       .catch(() => undefined);
   }, { once: true });

@@ -7,23 +7,23 @@
     <meta name="referrer" content="no-referrer">
     <meta name="theme-color" content="#111713">
     <link rel="icon" href="data:,">
-    <title>婚恋资金纠纷材料梳理 · 内部审阅</title>
+    <title>Yellow</title>
     <link rel="preload" as="image" type="image/webp"
       href="assets/slides-webp/slide-01.webp"
       media="(min-width: 1101px)" fetchpriority="high">
     <link rel="preload" as="image" type="image/webp"
       href="assets/slides-mobile/slide-01.webp"
       media="(max-width: 1100px)" fetchpriority="high">
-    <link rel="stylesheet" href="styles.css?v=10">
+    <link rel="stylesheet" href="styles.css?v=12">
+    <link rel="stylesheet" href="mobile-fix.css?v=12">
   </head>
-  <body>
+  <body class="library-page-open">
     <div class="app">
       <header class="topbar">
         <div class="brand">
           <span class="brand-mark" aria-hidden="true">H</span>
           <div class="brand-copy">
-            <p class="eyebrow">内部审阅 · 请勿转发</p>
-            <h1>婚恋资金纠纷材料梳理</h1>
+            <h1>Yellow</h1>
           </div>
         </div>
 
@@ -127,47 +127,56 @@
       </footer>
     </div>
 
-    <section class="content-page" id="contentPage" hidden aria-labelledby="contentPageTitle">
-      <div class="content-page-inner">
-        <header class="content-page-header">
+    <section class="library-page" id="libraryPage" aria-labelledby="libraryPageTitle">
+      <div class="library-page-inner">
+        <header class="library-page-header">
           <div>
-            <p class="eyebrow">10-24 · 独立内部页面</p>
-            <h2 id="contentPageTitle">内容</h2>
-            <p>5 张图片与 8 段现场视频，按类型分开查看。</p>
+            <p class="eyebrow">Yellow · 全部资料</p>
+            <h2 id="libraryPageTitle">简介与内容</h2>
+            <p>13 页材料概览，5 张图片与 8 段现场视频。向下滚动即可连续查看。</p>
           </div>
-          <button class="icon-button" id="contentPageClose" type="button" aria-label="关闭内容页面">
+          <button class="icon-button" id="libraryPageClose" type="button" aria-label="返回演示">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M18 6 6 18M6 6l12 12"></path>
             </svg>
           </button>
         </header>
 
-        <div class="content-tabs" role="tablist" aria-label="内容分类">
-          <button class="content-tab is-active" id="imagesTab" type="button" role="tab" aria-selected="true" aria-controls="imagesSection">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <rect x="3" y="4" width="18" height="16" rx="2"></rect>
-              <circle cx="9" cy="10" r="2"></circle>
-              <path d="m4 17 5-4 4 3 3-2 4 3"></path>
-            </svg>
-            <span>图片资料</span>
-            <b>05</b>
-          </button>
-          <button class="content-tab" id="videosTab" type="button" role="tab" aria-selected="false" aria-controls="videosSection">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <rect x="3" y="5" width="14" height="14" rx="2"></rect>
-              <path d="m17 10 4-2v8l-4-2"></path>
-            </svg>
-            <span>视频资料</span>
-            <b>08</b>
-          </button>
-        </div>
-
-        <section class="content-section" id="imagesSection" role="tabpanel" aria-labelledby="imagesTab">
-          <div class="content-grid content-image-grid" id="contentImageGrid"></div>
+        <section class="library-section" id="overviewSection" aria-labelledby="overviewSectionTitle">
+          <div class="library-section-heading">
+            <div>
+              <p class="eyebrow">01 / 简介</p>
+              <h3 id="overviewSectionTitle">材料页概览</h3>
+            </div>
+            <span class="library-section-count">13 页</span>
+          </div>
+          <div class="overview-grid" id="overviewGrid"></div>
         </section>
 
-        <section class="content-section" id="videosSection" role="tabpanel" aria-labelledby="videosTab" hidden>
-          <div class="content-grid content-video-grid" id="contentVideoGrid"></div>
+        <section class="library-section" id="contentSection" aria-labelledby="contentSectionTitle">
+          <div class="library-section-heading">
+            <div>
+              <p class="eyebrow">02 / 内容</p>
+              <h3 id="contentSectionTitle">图片与现场视频</h3>
+            </div>
+            <span class="library-section-count">13 项</span>
+          </div>
+
+          <div class="content-group" id="imagesSection" aria-labelledby="imagesSectionTitle">
+            <div class="content-group-heading">
+              <h4 id="imagesSectionTitle">图片资料</h4>
+              <span>05</span>
+            </div>
+            <div class="content-grid content-image-grid" id="contentImageGrid"></div>
+          </div>
+
+          <div class="content-group" id="videosSection" aria-labelledby="videosSectionTitle">
+            <div class="content-group-heading">
+              <h4 id="videosSectionTitle">视频资料</h4>
+              <span>08</span>
+            </div>
+            <div class="content-grid content-video-grid" id="contentVideoGrid"></div>
+          </div>
         </section>
       </div>
     </section>
@@ -220,21 +229,6 @@
       </footer>
     </div>
 
-    <div class="overview" id="overview" hidden>
-      <div class="overview-header">
-        <div>
-          <p class="eyebrow">简介</p>
-          <h2>内容简介</h2>
-        </div>
-        <button class="icon-button overview-close" id="overviewClose" type="button" aria-label="关闭页面总览">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M18 6 6 18M6 6l12 12"></path>
-          </svg>
-        </button>
-      </div>
-      <div class="overview-grid" id="overviewGrid"></div>
-    </div>
-
-    <script src="app.js?v=10" defer></script>
+    <script src="app.js?v=12" defer></script>
   </body>
 </html>

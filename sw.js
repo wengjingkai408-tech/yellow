@@ -1,9 +1,9 @@
-const CACHE_NAME = "yellow-presentation-v10";
+const CACHE_NAME = "yellow-presentation-v11";
 const CORE_ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=10",
-  "./app.js?v=10",
+  "./styles.css?v=11",
+  "./app.js?v=11",
   "./assets/slides-webp/slide-01.webp",
   "./assets/slides-mobile/slide-01.webp",
   "./assets/thumbs-webp/slide-01.webp",
