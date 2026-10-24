@@ -1,0 +1,100 @@
+{
+  "images": [
+    {
+      "id": "image-01",
+      "source": "出轨证据.jpg",
+      "width": 1279,
+      "height": 1706
+    },
+    {
+      "id": "image-02",
+      "source": "联系方式 (1).jpg",
+      "width": 1122,
+      "height": 1653
+    },
+    {
+      "id": "image-03",
+      "source": "联系方式 (2).jpg",
+      "width": 1126,
+      "height": 1680
+    },
+    {
+      "id": "image-04",
+      "source": "联系方式 (3).jpg",
+      "width": 1126,
+      "height": 1680
+    },
+    {
+      "id": "image-05",
+      "source": "联系方式 (4).jpg",
+      "width": 1125,
+      "height": 1680
+    }
+  ],
+  "videos": [
+    {
+      "duration": 6.03,
+      "width": 720,
+      "height": 1280,
+      "id": "video-01",
+      "source": "现场视频 (1).mp4",
+      "bytes": 338998
+    },
+    {
+      "duration": 22.3,
+      "width": 720,
+      "height": 1280,
+      "id": "video-02",
+      "source": "现场视频 (2).mp4",
+      "bytes": 942015
+    },
+    {
+      "duration": 18.24,
+      "width": 544,
+      "height": 960,
+      "id": "video-03",
+      "source": "现场视频 (3).mp4",
+      "bytes": 1794965
+    },
+    {
+      "duration": 12.3,
+      "width": 544,
+      "height": 960,
+      "id": "video-04",
+      "source": "现场视频 (4).mp4",
+      "bytes": 1160678
+    },
+    {
+      "duration": 9.43,
+      "width": 960,
+      "height": 544,
+      "id": "video-05",
+      "source": "现场视频 (5).mp4",
+      "bytes": 246523
+    },
+    {
+      "duration": 7.83,
+      "width": 720,
+      "height": 1280,
+      "id": "video-06",
+      "source": "现场视频 (6).mp4",
+      "bytes": 689545
+    },
+    {
+      "duration": 12.23,
+      "width": 720,
+      "height": 1280,
+      "id": "video-07",
+      "source": "现场视频 (7).mp4",
+      "bytes": 596894
+    },
+    {
+      "duration": 2.5,
+      "width": 544,
+      "height": 960,
+      "id": "video-08",
+      "source": "现场视频 (8).mp4",
+      "bytes": 297864
+    }
+  ]
+}

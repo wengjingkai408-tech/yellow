@@ -48,6 +48,35 @@ const slides = [
   label: slide.label ?? `第 ${index + 1} 页`,
 }));
 
+const contentImages = [
+  "出轨证据",
+  "联系方式 1",
+  "联系方式 2",
+  "联系方式 3",
+  "联系方式 4",
+].map((title, index) => {
+  const id = `image-${String(index + 1).padStart(2, "0")}`;
+  return {
+    title,
+    category: "图片资料",
+    src: `assets/content/images/${id}.webp`,
+    thumb: `assets/content/image-thumbs/${id}-thumb.webp`,
+    alt: `${title}图片`,
+  };
+});
+
+const videoDurations = [6.03, 22.3, 18.24, 12.3, 9.43, 7.83, 12.23, 2.5];
+const contentVideos = videoDurations.map((duration, index) => {
+  const id = `video-${String(index + 1).padStart(2, "0")}`;
+  return {
+    title: `现场视频 ${index + 1}`,
+    category: "视频资料",
+    src: `assets/content/videos/${id}.mp4`,
+    poster: `assets/content/video-posters/${id}-poster.webp`,
+    duration,
+  };
+});
+
 const slideImage = document.querySelector("#slideImage");
 const canvasWrap = document.querySelector("#canvasWrap");
 const currentPage = document.querySelector("#currentPage");
@@ -61,9 +90,36 @@ const overviewGrid = document.querySelector("#overviewGrid");
 const overviewButton = document.querySelector("#overviewButton");
 const overviewClose = document.querySelector("#overviewClose");
 const fullscreenButton = document.querySelector("#fullscreenButton");
+const contentButton = document.querySelector("#contentButton");
+const contentPage = document.querySelector("#contentPage");
+const contentPageClose = document.querySelector("#contentPageClose");
+const imagesTab = document.querySelector("#imagesTab");
+const videosTab = document.querySelector("#videosTab");
+const imagesSection = document.querySelector("#imagesSection");
+const videosSection = document.querySelector("#videosSection");
+const contentImageGrid = document.querySelector("#contentImageGrid");
+const contentVideoGrid = document.querySelector("#contentVideoGrid");
+const mediaViewer = document.querySelector("#mediaViewer");
+const mediaViewerClose = document.querySelector("#mediaViewerClose");
+const mediaCounter = document.querySelector("#mediaCounter");
+const mediaCategory = document.querySelector("#mediaCategory");
+const mediaViewerTitle = document.querySelector("#mediaViewerTitle");
+const mediaViewerStage = document.querySelector("#mediaViewerStage");
+const mediaViewerImage = document.querySelector("#mediaViewerImage");
+const mediaVideoShell = document.querySelector("#mediaVideoShell");
+const mediaViewerVideo = document.querySelector("#mediaViewerVideo");
+const mediaLoading = document.querySelector("#mediaLoading");
+const mediaPreviousButton = document.querySelector("#mediaPreviousButton");
+const mediaNextButton = document.querySelector("#mediaNextButton");
 const stage = document.querySelector("#stage");
 const slideError = document.querySelector("#slideError");
 let activeIndex = 0;
+let activeContentType = "images";
+let activeMediaIndex = 0;
+let mediaReturnFocus = contentButton;
+let mediaVideoObjectUrl = null;
+let mediaLoadToken = 0;
+let contentCacheWarmed = false;
 let pointerStartX = null;
 let pointerStartY = null;
 let transitionToken = 0;
@@ -122,6 +178,217 @@ slides.forEach((slide, index) => {
   thumbnailList.appendChild(createThumbnail(slide, index));
   overviewGrid.appendChild(createThumbnail(slide, index, "overview"));
 });
+
+function formatDuration(seconds) {
+  const rounded = Math.max(0, Math.round(seconds));
+  return `${String(Math.floor(rounded / 60)).padStart(2, "0")}:${String(rounded % 60).padStart(2, "0")}`;
+}
+
+function createContentCard(item, index, type) {
+  const isVideo = type === "videos";
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `content-card${isVideo ? " content-video-card" : ""}`;
+  button.dataset.contentType = type;
+  button.dataset.contentIndex = String(index);
+  button.setAttribute("aria-label", `${isVideo ? "播放" : "查看"}${item.title}`);
+
+  const media = document.createElement("div");
+  media.className = "content-card-media";
+  const image = document.createElement("img");
+  image.src = isVideo ? item.poster : item.thumb;
+  image.alt = "";
+  image.width = 520;
+  image.height = 700;
+  image.loading = "lazy";
+  image.decoding = "async";
+  media.appendChild(image);
+
+  if (isVideo) {
+    const play = document.createElement("span");
+    play.className = "content-play";
+    play.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7z"></path></svg>';
+    const duration = document.createElement("span");
+    duration.className = "content-duration";
+    duration.textContent = formatDuration(item.duration);
+    media.append(play, duration);
+  }
+
+  const copy = document.createElement("div");
+  copy.className = "content-card-copy";
+  const title = document.createElement("strong");
+  title.textContent = item.title;
+  const category = document.createElement("span");
+  category.textContent = isVideo ? "点击播放" : "点击查看大图";
+  copy.append(title, category);
+  button.append(media, copy);
+
+  button.addEventListener("click", () => {
+    openMediaViewer(type, index, button);
+  });
+
+  return button;
+}
+
+contentImages.forEach((item, index) => {
+  contentImageGrid.appendChild(createContentCard(item, index, "images"));
+});
+contentVideos.forEach((item, index) => {
+  contentVideoGrid.appendChild(createContentCard(item, index, "videos"));
+});
+
+function showContentTab(type) {
+  activeContentType = type;
+  const showsImages = type === "images";
+  imagesTab.classList.toggle("is-active", showsImages);
+  videosTab.classList.toggle("is-active", !showsImages);
+  imagesTab.setAttribute("aria-selected", String(showsImages));
+  videosTab.setAttribute("aria-selected", String(!showsImages));
+  imagesSection.hidden = !showsImages;
+  videosSection.hidden = showsImages;
+}
+
+function openContentPage() {
+  if (!overview.hidden) closeOverview();
+  contentPage.hidden = false;
+  contentButton.classList.add("is-active");
+  document.body.classList.add("content-page-open");
+  showContentTab("images");
+  contentPageClose.focus();
+  warmFirstContentVideo();
+}
+
+function closeContentPage(restoreFocus = true) {
+  contentPage.hidden = true;
+  contentButton.classList.remove("is-active");
+  document.body.classList.remove("content-page-open");
+  if (restoreFocus) contentButton.focus();
+}
+
+function currentMediaItems() {
+  return activeContentType === "videos" ? contentVideos : contentImages;
+}
+
+function resetVideoViewer() {
+  mediaViewerVideo.pause();
+  mediaViewerVideo.removeAttribute("src");
+  mediaViewerVideo.removeAttribute("poster");
+  mediaViewerVideo.load();
+  if (mediaVideoObjectUrl) {
+    URL.revokeObjectURL(mediaVideoObjectUrl);
+    mediaVideoObjectUrl = null;
+  }
+}
+
+async function getCachedVideoUrl(url) {
+  if (!("caches" in window)) return url;
+  const absoluteUrl = new URL(url, window.location.href).href;
+  const cache = await caches.open("yellow-content-videos-v1");
+  const request = new Request(absoluteUrl);
+  let response = await cache.match(request);
+  if (!response) {
+    response = await fetch(request);
+    if (!response.ok) throw new Error(`Video request failed: ${response.status}`);
+    await cache.put(request, response.clone());
+  }
+  return URL.createObjectURL(await response.blob());
+}
+
+async function loadViewerVideo(item, token, shouldPlay) {
+  mediaLoading.hidden = false;
+  resetVideoViewer();
+  mediaViewerVideo.poster = item.poster;
+
+  try {
+    const url = await getCachedVideoUrl(item.src);
+    if (token !== mediaLoadToken) {
+      URL.revokeObjectURL(url);
+      return;
+    }
+    mediaVideoObjectUrl = url;
+    mediaViewerVideo.src = url;
+    mediaViewerVideo.load();
+    mediaLoading.hidden = true;
+    if (shouldPlay) mediaViewerVideo.play().catch(() => undefined);
+  } catch {
+    if (token !== mediaLoadToken) return;
+    mediaViewerVideo.src = item.src;
+    mediaViewerVideo.load();
+    mediaLoading.hidden = true;
+    if (shouldPlay) mediaViewerVideo.play().catch(() => undefined);
+  }
+}
+
+function updateMediaViewer(options = {}) {
+  const items = currentMediaItems();
+  activeMediaIndex = (activeMediaIndex + items.length) % items.length;
+  const item = items[activeMediaIndex];
+  const isVideo = activeContentType === "videos";
+  const token = ++mediaLoadToken;
+
+  mediaViewerStage.classList.remove("is-image-zoomed");
+  mediaViewerImage.hidden = isVideo;
+  mediaVideoShell.hidden = !isVideo;
+  mediaCounter.textContent =
+    `${String(activeMediaIndex + 1).padStart(2, "0")} / ${String(items.length).padStart(2, "0")}`;
+  mediaCategory.textContent = isVideo ? "视频资料" : "图片资料";
+  mediaViewerTitle.textContent = item.title;
+
+  if (isVideo) {
+    mediaViewerImage.removeAttribute("src");
+    loadViewerVideo(item, token, options.autoplay === true);
+  } else {
+    resetVideoViewer();
+    mediaLoading.hidden = true;
+    mediaViewerImage.src = item.src;
+    mediaViewerImage.alt = item.alt;
+  }
+}
+
+function openMediaViewer(type, index, trigger) {
+  activeContentType = type;
+  activeMediaIndex = index;
+  mediaReturnFocus = trigger;
+  mediaViewer.hidden = false;
+  document.body.classList.add("media-viewer-open");
+  updateMediaViewer({ autoplay: type === "videos" });
+  mediaViewerClose.focus();
+}
+
+function closeMediaViewer(restoreFocus = true) {
+  mediaViewer.hidden = true;
+  document.body.classList.remove("media-viewer-open");
+  mediaLoadToken += 1;
+  resetVideoViewer();
+  mediaViewerStage.classList.remove("is-image-zoomed");
+  if (restoreFocus) mediaReturnFocus?.focus();
+}
+
+function stepMedia(direction) {
+  activeMediaIndex += direction;
+  updateMediaViewer({ autoplay: activeContentType === "videos" });
+}
+
+async function warmFirstContentVideo() {
+  if (contentCacheWarmed || !("caches" in window)) return;
+  const connection = navigator.connection;
+  const slowNetwork = connection?.saveData === true
+    || /(^|-)2g$/.test(connection?.effectiveType ?? "");
+  if (slowNetwork) return;
+
+  contentCacheWarmed = true;
+  scheduleIdle(async () => {
+    try {
+      const absoluteUrl = new URL(contentVideos[0].src, window.location.href).href;
+      const cache = await caches.open("yellow-content-videos-v1");
+      if (await cache.match(absoluteUrl)) return;
+      const response = await fetch(absoluteUrl);
+      if (response.ok) await cache.put(absoluteUrl, response);
+    } catch {
+      // Video caching is opportunistic; playback still falls back to streaming.
+    }
+  }, 1800);
+}
 
 function preloadAround(center) {
   const index = (center + 1) % slideCount;
@@ -193,6 +460,7 @@ function goNext() {
 }
 
 function openOverview() {
+  if (!contentPage.hidden) closeContentPage(false);
   overview.hidden = false;
   document.body.classList.add("overview-open");
   overviewClose.focus();
@@ -221,6 +489,17 @@ async function toggleFullscreen() {
 overviewButton.addEventListener("click", openOverview);
 overviewClose.addEventListener("click", closeOverview);
 fullscreenButton.addEventListener("click", toggleFullscreen);
+contentButton.addEventListener("click", openContentPage);
+contentPageClose.addEventListener("click", closeContentPage);
+imagesTab.addEventListener("click", () => showContentTab("images"));
+videosTab.addEventListener("click", () => showContentTab("videos"));
+mediaViewerClose.addEventListener("click", closeMediaViewer);
+mediaPreviousButton.addEventListener("click", () => stepMedia(-1));
+mediaNextButton.addEventListener("click", () => stepMedia(1));
+mediaViewerImage.addEventListener("click", () => {
+  if (mediaViewerImage.hidden) return;
+  mediaViewerStage.classList.toggle("is-image-zoomed");
+});
 overview.addEventListener("click", (event) => {
   if (event.target === overview) closeOverview();
 });
@@ -244,6 +523,33 @@ document.addEventListener("keydown", (event) => {
   const isTyping = target instanceof HTMLElement
     && (target.matches("input, textarea, select") || target.isContentEditable);
   if (isTyping) return;
+
+  if (!mediaViewer.hidden) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeMediaViewer();
+      return;
+    }
+    if (event.key === "ArrowLeft" || event.key === "PageUp") {
+      event.preventDefault();
+      stepMedia(-1);
+      return;
+    }
+    if (event.key === "ArrowRight" || event.key === "PageDown") {
+      event.preventDefault();
+      stepMedia(1);
+      return;
+    }
+    return;
+  }
+
+  if (!contentPage.hidden) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeContentPage();
+    }
+    return;
+  }
 
   if (event.key === "Escape" && !overview.hidden) {
     closeOverview();
@@ -281,6 +587,11 @@ document.addEventListener("keydown", (event) => {
     case "O":
       event.preventDefault();
       openOverview();
+      break;
+    case "c":
+    case "C":
+      event.preventDefault();
+      openContentPage();
       break;
     default:
       break;
@@ -348,7 +659,7 @@ function warmSlideCache() {
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js?v=9", { scope: "./" })
+    navigator.serviceWorker.register("sw.js?v=10", { scope: "./" })
       .then(warmSlideCache)
       .catch(() => undefined);
   }, { once: true });

@@ -1,9 +1,9 @@
-const CACHE_NAME = "yellow-presentation-v9";
+const CACHE_NAME = "yellow-presentation-v10";
 const CORE_ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=9",
-  "./app.js?v=9",
+  "./styles.css?v=10",
+  "./app.js?v=10",
   "./assets/slides-webp/slide-01.webp",
   "./assets/slides-mobile/slide-01.webp",
   "./assets/thumbs-webp/slide-01.webp",
@@ -19,6 +19,19 @@ const CORE_ASSETS = [
   "./assets/evidence/thumbs/judgment-cover-thumb.webp",
   "./assets/evidence/thumbs/judgment-page-01-thumb.webp",
   "./assets/evidence/thumbs/judgment-page-02-thumb.webp",
+  "./assets/content/image-thumbs/image-01-thumb.webp",
+  "./assets/content/image-thumbs/image-02-thumb.webp",
+  "./assets/content/image-thumbs/image-03-thumb.webp",
+  "./assets/content/image-thumbs/image-04-thumb.webp",
+  "./assets/content/image-thumbs/image-05-thumb.webp",
+  "./assets/content/video-posters/video-01-poster.webp",
+  "./assets/content/video-posters/video-02-poster.webp",
+  "./assets/content/video-posters/video-03-poster.webp",
+  "./assets/content/video-posters/video-04-poster.webp",
+  "./assets/content/video-posters/video-05-poster.webp",
+  "./assets/content/video-posters/video-06-poster.webp",
+  "./assets/content/video-posters/video-07-poster.webp",
+  "./assets/content/video-posters/video-08-poster.webp",
 ];
 
 self.addEventListener("install", (event) => {
