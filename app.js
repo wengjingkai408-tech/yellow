@@ -1,4 +1,4 @@
-const slideCount = 13;
+const slideCount = 15;
 
 const standardSlide = (id) => ({
   src: `assets/slides-webp/slide-${id}.webp`,
@@ -17,9 +17,23 @@ const evidenceSlide = (fileName, thumb, label) => ({
   label,
 });
 
+const photoSlide = (pageNumber, label) => ({
+  src: `assets/slides-webp/slide-insert-${pageNumber}.webp`,
+  srcMobile: `assets/slides-mobile/slide-insert-${pageNumber}.webp`,
+  srcFallback: `assets/slides/slide-insert-${pageNumber}.png`,
+  thumb: `assets/thumbs-webp/slide-insert-${pageNumber}.webp`,
+  kind: "photo",
+  label,
+});
+
 const slides = [
-  ...Array.from({ length: 8 }, (_, index) => (
+  ...Array.from({ length: 4 }, (_, index) => (
     standardSlide(String(index + 1).padStart(2, "0"))
+  )),
+  photoSlide("05", "第 5 页 现场照片一"),
+  photoSlide("06", "第 6 页 现场照片二"),
+  ...Array.from({ length: 4 }, (_, index) => (
+    standardSlide(String(index + 5).padStart(2, "0"))
   )),
   evidenceSlide(
     "confrontation",
@@ -243,7 +257,7 @@ function updateLibraryNavigation(section) {
   contentSection.hidden = showsOverview;
   libraryPageTitle.textContent = showsOverview ? "简介" : "内容";
   libraryPageDescription.textContent = showsOverview
-    ? "13 页材料概览。"
+    ? "15 页材料概览。"
     : "5 张图片与 8 段现场视频，按类型分组查看。";
 }
 
@@ -666,7 +680,7 @@ function warmSlideCache() {
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js?v=13", { scope: "./" })
+    navigator.serviceWorker.register("sw.js?v=14", { scope: "./" })
       .then(warmSlideCache)
       .catch(() => undefined);
   }, { once: true });
