@@ -26,6 +26,15 @@ const photoSlide = (pageNumber, label) => ({
   label,
 });
 
+const readableSlide = (pageNumber, label) => ({
+  src: `assets/slides-webp/readable-${pageNumber}.webp`,
+  srcMobile: `assets/slides-mobile/readable-${pageNumber}.webp`,
+  srcFallback: `assets/slides/readable-${pageNumber}.png`,
+  thumb: `assets/thumbs-webp/readable-${pageNumber}.webp`,
+  kind: "readable",
+  label,
+});
+
 const slides = [
   ...Array.from({ length: 4 }, (_, index) => (
     standardSlide(String(index + 1).padStart(2, "0"))
@@ -45,15 +54,13 @@ const slides = [
     "assets/evidence/thumbs/judgment-cover-thumb.webp",
     "第 10 页 法院判决",
   ),
-  evidenceSlide(
-    "judgment-page-01",
-    "assets/evidence/thumbs/judgment-page-01-thumb.webp",
-    "第 11 页 判决内容一",
+  readableSlide(
+    "13",
+    "第 13 页 判决内容一",
   ),
-  evidenceSlide(
-    "judgment-page-02",
-    "assets/evidence/thumbs/judgment-page-02-thumb.webp",
-    "第 12 页 判决内容二",
+  readableSlide(
+    "14",
+    "第 14 页 判决内容二",
   ),
   standardSlide("09"),
 ].map((slide, index) => ({
@@ -651,7 +658,7 @@ function warmSlideCache() {
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js?v=16", { scope: "./" })
+    navigator.serviceWorker.register("sw.js?v=17", { scope: "./" })
       .then(warmSlideCache)
       .catch(() => undefined);
   }, { once: true });

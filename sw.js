@@ -1,10 +1,10 @@
-const CACHE_NAME = "yellow-presentation-v16";
+const CACHE_NAME = "yellow-presentation-v17";
 const CORE_ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=16",
-  "./mobile-fix.css?v=16",
-  "./app.js?v=16",
+  "./styles.css?v=17",
+  "./mobile-fix.css?v=17",
+  "./app.js?v=17",
   "./assets/slides-webp/slide-01.webp",
   "./assets/slides-mobile/slide-01.webp",
   "./assets/thumbs-webp/slide-01.webp",
@@ -18,6 +18,8 @@ const CORE_ASSETS = [
   "./assets/thumbs-webp/slide-09.webp",
   "./assets/thumbs-webp/slide-insert-05.webp",
   "./assets/thumbs-webp/slide-insert-06.webp",
+  "./assets/thumbs-webp/readable-13.webp",
+  "./assets/thumbs-webp/readable-14.webp",
   "./assets/evidence/thumbs/confrontation-thumb.webp",
   "./assets/evidence/thumbs/judgment-cover-thumb.webp",
   "./assets/evidence/thumbs/judgment-page-01-thumb.webp",
