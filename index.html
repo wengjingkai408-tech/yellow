@@ -14,8 +14,8 @@
     <link rel="preload" as="image" type="image/webp"
       href="assets/slides-mobile/slide-01.webp"
       media="(max-width: 1100px)" fetchpriority="high">
-    <link rel="stylesheet" href="styles.css?v=15">
-    <link rel="stylesheet" href="mobile-fix.css?v=15">
+    <link rel="stylesheet" href="styles.css?v=16">
+    <link rel="stylesheet" href="mobile-fix.css?v=16">
   </head>
   <body>
     <div class="app">
@@ -201,7 +201,16 @@
       <div class="media-viewer-stage" id="mediaViewerStage">
         <img id="mediaViewerImage" src="" alt="">
         <div class="media-video-shell" id="mediaVideoShell" hidden>
-          <video id="mediaViewerVideo" controls playsinline preload="metadata"></video>
+          <video
+            id="mediaViewerVideo"
+            controls
+            playsinline
+            webkit-playsinline
+            x5-playsinline
+            x5-video-player-type="h5"
+            x5-video-player-fullscreen="true"
+            preload="metadata"
+          ></video>
           <div class="media-loading" id="mediaLoading" hidden>
             <span class="media-spinner" aria-hidden="true"></span>
             <span>正在加载视频</span>
@@ -215,6 +224,9 @@
           <h2 id="mediaViewerTitle">图片 01</h2>
         </div>
         <div class="media-navigation">
+          <a class="media-open-video" id="mediaOpenVideo" href="" target="_blank" rel="noopener noreferrer" hidden>
+            打开视频
+          </a>
           <button class="round-button" id="mediaPreviousButton" type="button" aria-label="上一个">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="m15 18-6-6 6-6"></path>
@@ -229,6 +241,6 @@
       </footer>
     </div>
 
-    <script src="app.js?v=15" defer></script>
+    <script src="app.js?v=16" defer></script>
   </body>
 </html>

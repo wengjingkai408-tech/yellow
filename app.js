@@ -121,6 +121,7 @@ const mediaViewerImage = document.querySelector("#mediaViewerImage");
 const mediaVideoShell = document.querySelector("#mediaVideoShell");
 const mediaViewerVideo = document.querySelector("#mediaViewerVideo");
 const mediaLoading = document.querySelector("#mediaLoading");
+const mediaOpenVideo = document.querySelector("#mediaOpenVideo");
 const mediaPreviousButton = document.querySelector("#mediaPreviousButton");
 const mediaNextButton = document.querySelector("#mediaNextButton");
 const stage = document.querySelector("#stage");
@@ -129,9 +130,7 @@ let activeIndex = 0;
 let activeContentType = "images";
 let activeMediaIndex = 0;
 let mediaReturnFocus = contentButton;
-let mediaVideoObjectUrl = null;
 let mediaLoadToken = 0;
-let contentCacheWarmed = false;
 let overviewGridRendered = false;
 let contentGridsRendered = false;
 let pointerStartX = null;
@@ -297,7 +296,6 @@ function openLibrary(section = "overview", options = {}) {
   }
 
   libraryPage.scrollTop = 0;
-  if (nextSection === "content") warmFirstContentVideo();
 }
 
 function closeLibrary(restoreFocus = true) {
@@ -325,53 +323,17 @@ function resetVideoViewer() {
   mediaViewerVideo.pause();
   mediaViewerVideo.removeAttribute("src");
   mediaViewerVideo.removeAttribute("poster");
+  mediaViewerVideo.preload = "none";
   mediaViewerVideo.load();
-  if (mediaVideoObjectUrl) {
-    URL.revokeObjectURL(mediaVideoObjectUrl);
-    mediaVideoObjectUrl = null;
-  }
 }
 
-async function getCachedVideoBlobUrl(url) {
-  if (!("caches" in window)) return null;
-  const absoluteUrl = new URL(url, window.location.href).href;
-  const cache = await caches.open("yellow-content-videos-v1");
-  const request = new Request(absoluteUrl);
-  const response = await cache.match(request);
-  if (!response) return null;
-  return URL.createObjectURL(await response.blob());
-}
-
-async function cacheVideoInBackground(url) {
-  if (!("caches" in window)) return;
-  const absoluteUrl = new URL(url, window.location.href).href;
-  const cache = await caches.open("yellow-content-videos-v1");
-  const request = new Request(absoluteUrl);
-  if (await cache.match(request)) return;
-  const response = await fetch(request);
-  if (response.ok) await cache.put(request, response);
-}
-
-async function loadViewerVideo(item, token, shouldPlay) {
+function loadViewerVideo(item, token, shouldPlay) {
   mediaLoading.hidden = false;
   resetVideoViewer();
   mediaViewerVideo.poster = item.poster;
-
-  let cachedUrl = null;
-  try {
-    cachedUrl = await getCachedVideoBlobUrl(item.src);
-  } catch {
-    cachedUrl = null;
-  }
-
-  if (token !== mediaLoadToken) {
-    if (cachedUrl) URL.revokeObjectURL(cachedUrl);
-    return;
-  }
-
-  mediaVideoObjectUrl = cachedUrl;
-  mediaViewerVideo.src = cachedUrl ?? item.src;
-  mediaViewerVideo.load();
+  mediaViewerVideo.preload = "auto";
+  mediaOpenVideo.href = item.src;
+  mediaOpenVideo.hidden = false;
 
   const finishLoading = () => {
     if (token === mediaLoadToken) mediaLoading.hidden = true;
@@ -380,12 +342,10 @@ async function loadViewerVideo(item, token, shouldPlay) {
   mediaViewerVideo.addEventListener("canplay", finishLoading, { once: true });
   mediaViewerVideo.addEventListener("error", finishLoading, { once: true });
 
+  mediaViewerVideo.src = item.src;
+  mediaViewerVideo.load();
+  if (mediaViewerVideo.readyState >= 1) finishLoading();
   if (shouldPlay) mediaViewerVideo.play().catch(() => undefined);
-  if (!cachedUrl) {
-    mediaViewerVideo.addEventListener("ended", () => {
-      cacheVideoInBackground(item.src).catch(() => undefined);
-    }, { once: true });
-  }
 }
 
 function updateMediaViewer(options = {}) {
@@ -409,6 +369,8 @@ function updateMediaViewer(options = {}) {
   } else {
     resetVideoViewer();
     mediaLoading.hidden = true;
+    mediaOpenVideo.hidden = true;
+    mediaOpenVideo.removeAttribute("href");
     mediaViewerImage.src = item.src;
     mediaViewerImage.alt = item.alt;
   }
@@ -436,23 +398,6 @@ function closeMediaViewer(restoreFocus = true) {
 function stepMedia(direction) {
   activeMediaIndex += direction;
   updateMediaViewer({ autoplay: activeContentType === "videos" });
-}
-
-async function warmFirstContentVideo() {
-  if (contentCacheWarmed || !("caches" in window)) return;
-  const connection = navigator.connection;
-  const slowNetwork = connection?.saveData === true
-    || /(^|-)2g$/.test(connection?.effectiveType ?? "");
-  if (slowNetwork) return;
-
-  contentCacheWarmed = true;
-  scheduleIdle(async () => {
-    try {
-      await cacheVideoInBackground(contentVideos[0].src);
-    } catch {
-      // Video caching is opportunistic; playback still falls back to streaming.
-    }
-  }, 1800);
 }
 
 function preloadAround(center) {
@@ -706,7 +651,7 @@ function warmSlideCache() {
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js?v=15", { scope: "./" })
+    navigator.serviceWorker.register("sw.js?v=16", { scope: "./" })
       .then(warmSlideCache)
       .catch(() => undefined);
   }, { once: true });

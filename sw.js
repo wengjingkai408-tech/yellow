@@ -1,10 +1,10 @@
-const CACHE_NAME = "yellow-presentation-v15";
+const CACHE_NAME = "yellow-presentation-v16";
 const CORE_ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=15",
-  "./mobile-fix.css?v=15",
-  "./app.js?v=15",
+  "./styles.css?v=16",
+  "./mobile-fix.css?v=16",
+  "./app.js?v=16",
   "./assets/slides-webp/slide-01.webp",
   "./assets/slides-mobile/slide-01.webp",
   "./assets/thumbs-webp/slide-01.webp",
@@ -50,10 +50,7 @@ self.addEventListener("activate", (event) => {
     caches.keys()
       .then((keys) => Promise.all(
         keys
-          .filter((key) => (
-            key !== CACHE_NAME
-            && !key.startsWith("yellow-content-videos-")
-          ))
+          .filter((key) => key !== CACHE_NAME)
           .map((key) => caches.delete(key)),
       ))
       .then(() => self.clients.claim()),

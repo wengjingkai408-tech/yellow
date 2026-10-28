@@ -1151,7 +1151,29 @@ body.evidence-overlay-open {
 
 .media-navigation {
   display: flex;
+  align-items: center;
   gap: 10px;
+}
+
+.media-open-video {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.media-open-video:hover {
+  border-color: rgba(244, 240, 231, 0.28);
+  color: var(--ink);
+}
+
+.media-open-video[hidden] {
+  display: none;
 }
 
 @media (max-width: 1000px) {
