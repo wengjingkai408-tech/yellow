@@ -1,9 +1,10 @@
-const CACHE_NAME = "yellow-presentation-v11";
+const CACHE_NAME = "yellow-presentation-v13";
 const CORE_ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=11",
-  "./app.js?v=11",
+  "./styles.css?v=13",
+  "./mobile-fix.css?v=13",
+  "./app.js?v=13",
   "./assets/slides-webp/slide-01.webp",
   "./assets/slides-mobile/slide-01.webp",
   "./assets/thumbs-webp/slide-01.webp",
@@ -47,7 +48,10 @@ self.addEventListener("activate", (event) => {
     caches.keys()
       .then((keys) => Promise.all(
         keys
-          .filter((key) => key !== CACHE_NAME)
+          .filter((key) => (
+            key !== CACHE_NAME
+            && !key.startsWith("yellow-content-videos-")
+          ))
           .map((key) => caches.delete(key)),
       ))
       .then(() => self.clients.claim()),
@@ -78,11 +82,27 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  const isCode = request.destination === "style" || request.destination === "script";
+  if (isCode) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request)),
+    );
+    return;
+  }
+
   const isStaticAsset = /\.(?:webp|png|css|js|woff2?|svg)$/.test(url.pathname);
   if (!isStaticAsset) return;
 
   event.respondWith(
-    caches.match(request, { ignoreSearch: true }).then((cached) => {
+    caches.match(request).then((cached) => {
       if (cached) return cached;
       return fetch(request).then((response) => {
         if (response.ok) {

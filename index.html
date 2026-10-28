@@ -14,10 +14,10 @@
     <link rel="preload" as="image" type="image/webp"
       href="assets/slides-mobile/slide-01.webp"
       media="(max-width: 1100px)" fetchpriority="high">
-    <link rel="stylesheet" href="styles.css?v=12">
-    <link rel="stylesheet" href="mobile-fix.css?v=12">
+    <link rel="stylesheet" href="styles.css?v=13">
+    <link rel="stylesheet" href="mobile-fix.css?v=13">
   </head>
-  <body class="library-page-open">
+  <body>
     <div class="app">
       <header class="topbar">
         <div class="brand">
@@ -127,13 +127,13 @@
       </footer>
     </div>
 
-    <section class="library-page" id="libraryPage" aria-labelledby="libraryPageTitle">
+    <section class="library-page" id="libraryPage" hidden aria-labelledby="libraryPageTitle">
       <div class="library-page-inner">
         <header class="library-page-header">
           <div>
             <p class="eyebrow">Yellow · 全部资料</p>
             <h2 id="libraryPageTitle">简介与内容</h2>
-            <p>13 页材料概览，5 张图片与 8 段现场视频。向下滚动即可连续查看。</p>
+            <p id="libraryPageDescription">13 页材料概览。</p>
           </div>
           <button class="icon-button" id="libraryPageClose" type="button" aria-label="返回演示">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -229,6 +229,6 @@
       </footer>
     </div>
 
-    <script src="app.js?v=12" defer></script>
+    <script src="app.js?v=13" defer></script>
   </body>
 </html>

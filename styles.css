@@ -829,6 +829,7 @@ body.evidence-overlay-open {
 }
 
 .library-page[hidden],
+.library-section[hidden],
 .media-viewer[hidden] {
   display: none;
 }

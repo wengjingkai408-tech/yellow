@@ -91,6 +91,8 @@ const fullscreenButton = document.querySelector("#fullscreenButton");
 const contentButton = document.querySelector("#contentButton");
 const libraryPage = document.querySelector("#libraryPage");
 const libraryPageClose = document.querySelector("#libraryPageClose");
+const libraryPageTitle = document.querySelector("#libraryPageTitle");
+const libraryPageDescription = document.querySelector("#libraryPageDescription");
 const overviewSection = document.querySelector("#overviewSection");
 const contentSection = document.querySelector("#contentSection");
 const contentImageGrid = document.querySelector("#contentImageGrid");
@@ -119,7 +121,6 @@ let contentCacheWarmed = false;
 let pointerStartX = null;
 let pointerStartY = null;
 let transitionToken = 0;
-let libraryScrollFrame = 0;
 const compactMedia = window.matchMedia("(max-width: 1100px)");
 
 function getSlideSource(slide) {
@@ -238,14 +239,12 @@ function updateLibraryNavigation(section) {
   const showsOverview = section === "overview";
   overviewButton.classList.toggle("is-active", showsOverview);
   contentButton.classList.toggle("is-active", !showsOverview);
-}
-
-function scrollLibraryTo(section, behavior = "smooth") {
-  const target = section === "content" ? contentSection : overviewSection;
-  const pageTop = libraryPage.getBoundingClientRect().top;
-  const targetTop = target.getBoundingClientRect().top - pageTop + libraryPage.scrollTop - 18;
-  libraryPage.scrollTo({ top: Math.max(0, targetTop), behavior });
-  updateLibraryNavigation(section);
+  overviewSection.hidden = !showsOverview;
+  contentSection.hidden = showsOverview;
+  libraryPageTitle.textContent = showsOverview ? "简介" : "内容";
+  libraryPageDescription.textContent = showsOverview
+    ? "13 页材料概览。"
+    : "5 张图片与 8 段现场视频，按类型分组查看。";
 }
 
 function openLibrary(section = "overview", options = {}) {
@@ -257,13 +256,8 @@ function openLibrary(section = "overview", options = {}) {
     history.replaceState(null, "", `#${nextSection}`);
   }
 
-  const behavior = options.instant ? "auto" : "smooth";
-  if (options.top) {
-    requestAnimationFrame(() => libraryPage.scrollTo({ top: 0, behavior }));
-  } else {
-    requestAnimationFrame(() => scrollLibraryTo(nextSection, behavior));
-  }
-  warmFirstContentVideo();
+  libraryPage.scrollTop = 0;
+  if (nextSection === "content") warmFirstContentVideo();
 }
 
 function closeLibrary(restoreFocus = true) {
@@ -298,18 +292,24 @@ function resetVideoViewer() {
   }
 }
 
-async function getCachedVideoUrl(url) {
-  if (!("caches" in window)) return url;
+async function getCachedVideoBlobUrl(url) {
+  if (!("caches" in window)) return null;
   const absoluteUrl = new URL(url, window.location.href).href;
   const cache = await caches.open("yellow-content-videos-v1");
   const request = new Request(absoluteUrl);
-  let response = await cache.match(request);
-  if (!response) {
-    response = await fetch(request);
-    if (!response.ok) throw new Error(`Video request failed: ${response.status}`);
-    await cache.put(request, response.clone());
-  }
+  const response = await cache.match(request);
+  if (!response) return null;
   return URL.createObjectURL(await response.blob());
+}
+
+async function cacheVideoInBackground(url) {
+  if (!("caches" in window)) return;
+  const absoluteUrl = new URL(url, window.location.href).href;
+  const cache = await caches.open("yellow-content-videos-v1");
+  const request = new Request(absoluteUrl);
+  if (await cache.match(request)) return;
+  const response = await fetch(request);
+  if (response.ok) await cache.put(request, response);
 }
 
 async function loadViewerVideo(item, token, shouldPlay) {
@@ -317,23 +317,34 @@ async function loadViewerVideo(item, token, shouldPlay) {
   resetVideoViewer();
   mediaViewerVideo.poster = item.poster;
 
+  let cachedUrl = null;
   try {
-    const url = await getCachedVideoUrl(item.src);
-    if (token !== mediaLoadToken) {
-      URL.revokeObjectURL(url);
-      return;
-    }
-    mediaVideoObjectUrl = url;
-    mediaViewerVideo.src = url;
-    mediaViewerVideo.load();
-    mediaLoading.hidden = true;
-    if (shouldPlay) mediaViewerVideo.play().catch(() => undefined);
+    cachedUrl = await getCachedVideoBlobUrl(item.src);
   } catch {
-    if (token !== mediaLoadToken) return;
-    mediaViewerVideo.src = item.src;
-    mediaViewerVideo.load();
-    mediaLoading.hidden = true;
-    if (shouldPlay) mediaViewerVideo.play().catch(() => undefined);
+    cachedUrl = null;
+  }
+
+  if (token !== mediaLoadToken) {
+    if (cachedUrl) URL.revokeObjectURL(cachedUrl);
+    return;
+  }
+
+  mediaVideoObjectUrl = cachedUrl;
+  mediaViewerVideo.src = cachedUrl ?? item.src;
+  mediaViewerVideo.load();
+
+  const finishLoading = () => {
+    if (token === mediaLoadToken) mediaLoading.hidden = true;
+  };
+  mediaViewerVideo.addEventListener("loadedmetadata", finishLoading, { once: true });
+  mediaViewerVideo.addEventListener("canplay", finishLoading, { once: true });
+  mediaViewerVideo.addEventListener("error", finishLoading, { once: true });
+
+  if (shouldPlay) mediaViewerVideo.play().catch(() => undefined);
+  if (!cachedUrl) {
+    mediaViewerVideo.addEventListener("ended", () => {
+      cacheVideoInBackground(item.src).catch(() => undefined);
+    }, { once: true });
   }
 }
 
@@ -397,11 +408,7 @@ async function warmFirstContentVideo() {
   contentCacheWarmed = true;
   scheduleIdle(async () => {
     try {
-      const absoluteUrl = new URL(contentVideos[0].src, window.location.href).href;
-      const cache = await caches.open("yellow-content-videos-v1");
-      if (await cache.match(absoluteUrl)) return;
-      const response = await fetch(absoluteUrl);
-      if (response.ok) await cache.put(absoluteUrl, response);
+      await cacheVideoInBackground(contentVideos[0].src);
     } catch {
       // Video caching is opportunistic; playback still falls back to streaming.
     }
@@ -502,18 +509,6 @@ mediaViewerImage.addEventListener("click", () => {
   if (mediaViewerImage.hidden) return;
   mediaViewerStage.classList.toggle("is-image-zoomed");
 });
-libraryPage.addEventListener("scroll", () => {
-  if (libraryScrollFrame) return;
-  libraryScrollFrame = requestAnimationFrame(() => {
-    libraryScrollFrame = 0;
-    const pageTop = libraryPage.getBoundingClientRect().top;
-    const section = contentSection.getBoundingClientRect().top <= pageTop + 160
-      ? "content"
-      : "overview";
-    updateLibraryNavigation(section);
-  });
-});
-
 slideImage.addEventListener("error", () => {
   canvasWrap.classList.remove("is-loading");
   slideError.hidden = false;
@@ -635,16 +630,12 @@ const initialIndex = slideHashMatch
 
 showSlide(initialIndex, { force: true, updateHash: false });
 
-if (slideHashMatch) {
+if (libraryHashMatch) {
+  openLibrary(libraryHashMatch[1], { instant: true, history: true, top: true });
+} else {
   libraryPage.hidden = true;
   document.body.classList.remove("library-page-open");
-  updateHash();
-} else {
-  openLibrary(libraryHashMatch?.[1] ?? "overview", {
-    instant: true,
-    history: true,
-    top: !libraryHashMatch,
-  });
+  if (slideHashMatch) updateHash();
 }
 
 function scheduleIdle(callback, timeout = 1800) {
@@ -662,7 +653,7 @@ function warmSlideCache() {
   if (slowNetwork || document.visibilityState === "hidden") return;
 
   scheduleIdle(async () => {
-    for (let index = 1; index < slideCount; index += 1) {
+    for (let index = 1; index < Math.min(slideCount, 3); index += 1) {
       if (document.visibilityState === "hidden") return;
       try {
         await fetch(getSlideSource(slides[index]), { cache: "force-cache" });
@@ -675,7 +666,7 @@ function warmSlideCache() {
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw-v12.js", { scope: "./" })
+    navigator.serviceWorker.register("sw.js?v=13", { scope: "./" })
       .then(warmSlideCache)
       .catch(() => undefined);
   }, { once: true });
