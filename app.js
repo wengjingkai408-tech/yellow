@@ -132,6 +132,8 @@ let mediaReturnFocus = contentButton;
 let mediaVideoObjectUrl = null;
 let mediaLoadToken = 0;
 let contentCacheWarmed = false;
+let overviewGridRendered = false;
+let contentGridsRendered = false;
 let pointerStartX = null;
 let pointerStartY = null;
 let transitionToken = 0;
@@ -167,7 +169,7 @@ function createThumbnail(slide, index, variant = "rail") {
   image.alt = "";
   image.width = 320;
   image.height = 180;
-  image.loading = variant === "rail" ? "eager" : "lazy";
+  image.loading = variant === "rail" && index < 4 ? "eager" : "lazy";
   image.decoding = "async";
   image.fetchPriority = "low";
   button.appendChild(image);
@@ -188,7 +190,6 @@ function createThumbnail(slide, index, variant = "rail") {
 
 slides.forEach((slide, index) => {
   thumbnailList.appendChild(createThumbnail(slide, index));
-  overviewGrid.appendChild(createThumbnail(slide, index, "overview"));
 });
 
 function formatDuration(seconds) {
@@ -242,15 +243,40 @@ function createContentCard(item, index, type) {
   return button;
 }
 
-contentImages.forEach((item, index) => {
-  contentImageGrid.appendChild(createContentCard(item, index, "images"));
-});
-contentVideos.forEach((item, index) => {
-  contentVideoGrid.appendChild(createContentCard(item, index, "videos"));
-});
+function renderOverviewGrid() {
+  if (overviewGridRendered) return;
+  overviewGridRendered = true;
+  const fragment = document.createDocumentFragment();
+  slides.forEach((slide, index) => {
+    fragment.appendChild(createThumbnail(slide, index, "overview"));
+  });
+  overviewGrid.appendChild(fragment);
+}
+
+function renderContentGrids() {
+  if (contentGridsRendered) return;
+  contentGridsRendered = true;
+
+  const imageFragment = document.createDocumentFragment();
+  contentImages.forEach((item, index) => {
+    imageFragment.appendChild(createContentCard(item, index, "images"));
+  });
+  contentImageGrid.appendChild(imageFragment);
+
+  const videoFragment = document.createDocumentFragment();
+  contentVideos.forEach((item, index) => {
+    videoFragment.appendChild(createContentCard(item, index, "videos"));
+  });
+  contentVideoGrid.appendChild(videoFragment);
+}
 
 function updateLibraryNavigation(section) {
   const showsOverview = section === "overview";
+  if (showsOverview) {
+    renderOverviewGrid();
+  } else {
+    renderContentGrids();
+  }
   overviewButton.classList.toggle("is-active", showsOverview);
   contentButton.classList.toggle("is-active", !showsOverview);
   overviewSection.hidden = !showsOverview;
@@ -680,7 +706,7 @@ function warmSlideCache() {
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js?v=14", { scope: "./" })
+    navigator.serviceWorker.register("sw.js?v=15", { scope: "./" })
       .then(warmSlideCache)
       .catch(() => undefined);
   }, { once: true });
