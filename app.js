@@ -27,10 +27,10 @@ const photoSlide = (pageNumber, label) => ({
 });
 
 const readableSlide = (pageNumber, label) => ({
-  src: `assets/slides-webp/readable-${pageNumber}.webp`,
-  srcMobile: `assets/slides-mobile/readable-${pageNumber}.webp`,
-  srcFallback: `assets/slides/readable-${pageNumber}.png`,
-  thumb: `assets/thumbs-webp/readable-${pageNumber}.webp`,
+  src: `assets/slides-webp/readable-${pageNumber}.webp?v=2`,
+  srcMobile: `assets/slides-mobile/readable-${pageNumber}.webp?v=2`,
+  srcFallback: `assets/slides/readable-${pageNumber}.png?v=2`,
+  thumb: `assets/thumbs-webp/readable-${pageNumber}.webp?v=2`,
   kind: "readable",
   label,
 });
@@ -658,7 +658,7 @@ function warmSlideCache() {
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js?v=17", { scope: "./" })
+    navigator.serviceWorker.register("sw.js?v=18", { scope: "./" })
       .then(warmSlideCache)
       .catch(() => undefined);
   }, { once: true });
