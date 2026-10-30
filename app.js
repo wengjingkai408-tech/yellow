@@ -337,7 +337,7 @@ const VIDEO_HOST_KEY = "yellow-video-host";
 const VIDEO_QUALITY_KEY = "yellow-video-quality";
 const CDN_REPO = "wengjingkai408-tech/yellow";
 const CDN_REF = "main";
-const CDN_VERSION = 19;
+const CDN_VERSION = 20;
 
 function defaultVideoQuality() {
   const saved = localStorage.getItem(VIDEO_QUALITY_KEY);
@@ -937,7 +937,7 @@ function warmSlideCache() {
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js?v=19", { scope: "./" })
+    navigator.serviceWorker.register("sw.js?v=20", { scope: "./" })
       .then(warmSlideCache)
       .catch(() => undefined);
   }, { once: true });
