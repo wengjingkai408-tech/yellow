@@ -357,23 +357,41 @@ function cdnAsset(relativePath) {
   return `https://cdn.jsdelivr.net/gh/${CDN_REPO}@${CDN_REF}/${relativePath}?v=${CDN_VERSION}`;
 }
 
-function probeVideoUrl(url, timeout = 2600) {
+function probeVideoUrl(url, timeout = 2000) {
   return new Promise((resolve) => {
     const controller = new AbortController();
-    const timer = window.setTimeout(() => controller.abort(), timeout);
+    let settled = false;
+    const timer = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      controller.abort();
+      resolve(null);
+    }, timeout);
     const started = performance.now();
     fetch(url, {
-      method: "HEAD",
+      headers: { Range: "bytes=0-32767" },
       cache: "no-store",
       mode: "cors",
       signal: controller.signal,
     })
       .then((response) => {
+        const ok = response.status === 206 || (response.status >= 200 && response.status < 300);
+        if (!ok) throw new Error(`status ${response.status}`);
+        return response.arrayBuffer();
+      })
+      .then((buffer) => {
+        if (settled) return;
+        settled = true;
         window.clearTimeout(timer);
-        const ok = response.status >= 200 && response.status < 400;
-        resolve(ok ? { url, ms: Math.round(performance.now() - started) } : null);
+        if (!buffer || buffer.byteLength === 0) {
+          resolve(null);
+          return;
+        }
+        resolve({ url, ms: Math.round(performance.now() - started) });
       })
       .catch(() => {
+        if (settled) return;
+        settled = true;
         window.clearTimeout(timer);
         resolve(null);
       });
@@ -385,25 +403,25 @@ async function resolveVideoUrl(relativePath) {
   if (videoHost === "cdn") return cdnAsset(relativePath);
 
   const cdnUrl = cdnAsset(relativePath);
-  const winner = await new Promise((resolve) => {
-    let settled = false;
-    const done = (value) => {
-      if (settled) return;
-      settled = true;
-      resolve(value);
-    };
-    probeVideoUrl(cdnUrl).then((result) => result && done({ host: "cdn", url: cdnUrl }));
-    probeVideoUrl(relativePath).then((result) => result && done({ host: "origin", url: relativePath }));
-    window.setTimeout(() => done(null), 3000);
-  });
+  const [cdn, origin] = await Promise.all([
+    probeVideoUrl(cdnUrl),
+    probeVideoUrl(relativePath),
+  ]);
 
-  videoHost = winner ? winner.host : "origin";
+  if (cdn && (!origin || cdn.ms <= origin.ms)) {
+    videoHost = "cdn";
+  } else if (origin) {
+    videoHost = "origin";
+  } else {
+    videoHost = "origin";
+  }
+
   try {
     sessionStorage.setItem(VIDEO_HOST_KEY, videoHost);
   } catch {
     /* ignore */
   }
-  return winner ? winner.url : relativePath;
+  return videoHost === "cdn" ? cdnUrl : relativePath;
 }
 
 function setVideoLoading(state, message, progress = null) {
