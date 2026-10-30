@@ -89,10 +89,13 @@ const contentImages = [
 const videoDurations = [6.03, 22.3, 18.24, 12.3, 9.43, 7.83, 12.23, 2.5];
 const contentVideos = videoDurations.map((duration, index) => {
   const id = `video-${String(index + 1).padStart(2, "0")}`;
+  const hd = `assets/content/videos/${id}.mp4`;
   return {
     title: `现场视频 ${index + 1}`,
     category: "视频资料",
-    src: `assets/content/videos/${id}.mp4`,
+    src: hd,
+    srcHd: hd,
+    srcLite: `assets/content/videos/lite/${id}.mp4`,
     poster: `assets/content/video-posters/${id}-poster.webp`,
     duration,
   };
@@ -128,6 +131,10 @@ const mediaViewerImage = document.querySelector("#mediaViewerImage");
 const mediaVideoShell = document.querySelector("#mediaVideoShell");
 const mediaViewerVideo = document.querySelector("#mediaViewerVideo");
 const mediaLoading = document.querySelector("#mediaLoading");
+const mediaLoadingText = document.querySelector("#mediaLoadingText");
+const mediaProgress = document.querySelector("#mediaProgress");
+const mediaProgressFill = document.querySelector("#mediaProgressFill");
+const mediaQualityButton = document.querySelector("#mediaQualityButton");
 const mediaOpenVideo = document.querySelector("#mediaOpenVideo");
 const mediaPreviousButton = document.querySelector("#mediaPreviousButton");
 const mediaNextButton = document.querySelector("#mediaNextButton");
@@ -326,34 +333,286 @@ function currentMediaItems() {
   return activeContentType === "videos" ? contentVideos : contentImages;
 }
 
+const VIDEO_HOST_KEY = "yellow-video-host";
+const VIDEO_QUALITY_KEY = "yellow-video-quality";
+const CDN_REPO = "wengjingkai408-tech/yellow";
+const CDN_REF = "main";
+const CDN_VERSION = 19;
+
+function defaultVideoQuality() {
+  const saved = localStorage.getItem(VIDEO_QUALITY_KEY);
+  if (saved === "hd" || saved === "lite") return saved;
+  const connection = navigator.connection || {};
+  const saveData = connection.saveData === true;
+  const slowNetwork = /(^|-)2g$/.test(connection.effectiveType || "");
+  return saveData || slowNetwork || window.matchMedia("(max-width: 820px)").matches ? "lite" : "hd";
+}
+
+let videoQuality = defaultVideoQuality();
+let videoHost = sessionStorage.getItem(VIDEO_HOST_KEY) || "";
+let videoSession = null;
+let videoTicker = 0;
+
+function cdnAsset(relativePath) {
+  return `https://cdn.jsdelivr.net/gh/${CDN_REPO}@${CDN_REF}/${relativePath}?v=${CDN_VERSION}`;
+}
+
+function probeVideoUrl(url, timeout = 2600) {
+  return new Promise((resolve) => {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), timeout);
+    const started = performance.now();
+    fetch(url, {
+      method: "HEAD",
+      cache: "no-store",
+      mode: "cors",
+      signal: controller.signal,
+    })
+      .then((response) => {
+        window.clearTimeout(timer);
+        const ok = response.status >= 200 && response.status < 400;
+        resolve(ok ? { url, ms: Math.round(performance.now() - started) } : null);
+      })
+      .catch(() => {
+        window.clearTimeout(timer);
+        resolve(null);
+      });
+  });
+}
+
+async function resolveVideoUrl(relativePath) {
+  if (videoHost === "origin") return relativePath;
+  if (videoHost === "cdn") return cdnAsset(relativePath);
+
+  const cdnUrl = cdnAsset(relativePath);
+  const winner = await new Promise((resolve) => {
+    let settled = false;
+    const done = (value) => {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    };
+    probeVideoUrl(cdnUrl).then((result) => result && done({ host: "cdn", url: cdnUrl }));
+    probeVideoUrl(relativePath).then((result) => result && done({ host: "origin", url: relativePath }));
+    window.setTimeout(() => done(null), 3000);
+  });
+
+  videoHost = winner ? winner.host : "origin";
+  try {
+    sessionStorage.setItem(VIDEO_HOST_KEY, videoHost);
+  } catch {
+    /* ignore */
+  }
+  return winner ? winner.url : relativePath;
+}
+
+function setVideoLoading(state, message, progress = null) {
+  if (state === "hidden") {
+    mediaLoading.hidden = true;
+    return;
+  }
+  mediaLoading.hidden = false;
+  mediaLoading.dataset.state = state;
+  mediaLoadingText.textContent = message;
+  if (progress === null || progress === undefined) {
+    mediaProgress.hidden = false;
+    mediaProgress.classList.add("is-indeterminate");
+    mediaProgress.removeAttribute("aria-valuenow");
+    mediaProgress.setAttribute("aria-valuetext", "正在加载");
+    return;
+  }
+  mediaProgress.classList.remove("is-indeterminate");
+  const value = Math.max(0, Math.min(100, Math.round(progress)));
+  mediaProgress.hidden = false;
+  mediaProgressFill.style.width = `${value}%`;
+  mediaProgress.setAttribute("aria-valuenow", String(value));
+  mediaProgress.removeAttribute("aria-valuetext");
+}
+
+function videoBufferPercent() {
+  const { duration } = mediaViewerVideo;
+  if (!Number.isFinite(duration) || duration <= 0) return null;
+  if (!mediaViewerVideo.buffered.length) return 0;
+  const end = mediaViewerVideo.buffered.end(mediaViewerVideo.buffered.length - 1);
+  return Math.min(100, (end / duration) * 100);
+}
+
+function refreshVideoProgress() {
+  if (!videoSession || mediaLoading.hidden) return;
+  const percent = videoBufferPercent();
+  if (percent === null) {
+    setVideoLoading("loading", videoSession.slow ? "网络较慢，正在加载…" : "正在加载…");
+    return;
+  }
+  const prefix = videoSession.slow ? "网络较慢，已缓冲" : "正在缓冲";
+  setVideoLoading("loading", `${prefix} ${Math.round(percent)}%`, percent);
+}
+
+function startVideoWatchdog() {
+  window.clearInterval(videoTicker);
+  videoTicker = window.setInterval(() => {
+    if (!videoSession) {
+      window.clearInterval(videoTicker);
+      return;
+    }
+    const elapsed = performance.now() - videoSession.startedAt;
+    const video = mediaViewerVideo;
+    if (!video.paused && video.readyState >= 3) {
+      window.clearInterval(videoTicker);
+      return;
+    }
+    if (elapsed > 9000 && !videoSession.slow) {
+      videoSession.slow = true;
+      refreshVideoProgress();
+    }
+    if (elapsed > 24000 && !videoSession.timedOut) {
+      videoSession.timedOut = true;
+      const percent = videoBufferPercent();
+      setVideoLoading(
+        "slow",
+        percent === null
+          ? "网络较慢，可点右下角「打开视频」"
+          : `网络较慢，已缓冲 ${Math.round(percent)}%，可点「打开视频」`,
+        percent,
+      );
+      mediaOpenVideo.classList.add("is-urgent");
+    }
+  }, 500);
+}
+
 function resetVideoViewer() {
+  window.clearInterval(videoTicker);
+  videoSession = null;
   mediaViewerVideo.pause();
   mediaViewerVideo.removeAttribute("src");
   mediaViewerVideo.removeAttribute("poster");
   mediaViewerVideo.preload = "none";
   mediaViewerVideo.load();
+  mediaLoading.hidden = true;
+  mediaOpenVideo.classList.remove("is-urgent");
 }
 
-function loadViewerVideo(item, token, shouldPlay) {
-  mediaLoading.hidden = false;
-  resetVideoViewer();
-  mediaViewerVideo.poster = item.poster;
-  mediaViewerVideo.preload = "auto";
-  mediaOpenVideo.href = item.src;
+async function loadViewerVideo(item, token, shouldPlay, startAt = 0) {
+  window.clearInterval(videoTicker);
+  videoSession = {
+    token,
+    startedAt: performance.now(),
+    slow: false,
+    timedOut: false,
+    relative: "",
+    startAt,
+  };
+
+  mediaQualityButton.hidden = false;
+  mediaQualityButton.textContent = videoQuality === "hd" ? "省流" : "高清";
+  mediaQualityButton.setAttribute("aria-pressed", String(videoQuality === "lite"));
+  mediaQualityButton.setAttribute("aria-label", videoQuality === "hd" ? "切换到省流版" : "切换到高清版");
+  mediaOpenVideo.classList.remove("is-urgent");
   mediaOpenVideo.hidden = false;
 
-  const finishLoading = () => {
-    if (token === mediaLoadToken) mediaLoading.hidden = true;
-  };
-  mediaViewerVideo.addEventListener("loadedmetadata", finishLoading, { once: true });
-  mediaViewerVideo.addEventListener("canplay", finishLoading, { once: true });
-  mediaViewerVideo.addEventListener("error", finishLoading, { once: true });
+  mediaViewerVideo.poster = item.poster;
+  mediaViewerVideo.preload = "auto";
+  setVideoLoading("loading", "正在连接…");
 
-  mediaViewerVideo.src = item.src;
+  const relative = videoQuality === "hd" ? item.srcHd : item.srcLite;
+  let url = relative;
+  try {
+    url = await resolveVideoUrl(relative);
+  } catch {
+    url = relative;
+  }
+  if (token !== mediaLoadToken || !videoSession || videoSession.token !== token) return;
+
+  videoSession.relative = relative;
+  videoSession.startedAt = performance.now();
+
+  mediaOpenVideo.href = url;
+  mediaViewerVideo.src = url;
   mediaViewerVideo.load();
-  if (mediaViewerVideo.readyState >= 1) finishLoading();
+  startVideoWatchdog();
+
   if (shouldPlay) mediaViewerVideo.play().catch(() => undefined);
 }
+
+function toggleVideoQuality() {
+  if (activeContentType !== "videos") return;
+  videoQuality = videoQuality === "hd" ? "lite" : "hd";
+  try {
+    localStorage.setItem(VIDEO_QUALITY_KEY, videoQuality);
+  } catch {
+    /* ignore */
+  }
+  const item = currentMediaItems()[activeMediaIndex];
+  const resume = Number.isFinite(mediaViewerVideo.currentTime) ? mediaViewerVideo.currentTime : 0;
+  loadViewerVideo(item, ++mediaLoadToken, true, resume);
+}
+
+mediaViewerVideo.addEventListener("loadedmetadata", () => {
+  if (!videoSession) return;
+  if (videoSession.startAt > 0) {
+    try {
+      mediaViewerVideo.currentTime = videoSession.startAt;
+    } catch {
+      /* ignore */
+    }
+    videoSession.startAt = 0;
+  }
+  refreshVideoProgress();
+});
+
+mediaViewerVideo.addEventListener("progress", refreshVideoProgress);
+
+const finishVideoLoading = () => {
+  if (!videoSession) return;
+  window.clearInterval(videoTicker);
+  setVideoLoading("hidden");
+};
+
+mediaViewerVideo.addEventListener("canplay", finishVideoLoading);
+mediaViewerVideo.addEventListener("playing", finishVideoLoading);
+
+mediaViewerVideo.addEventListener("waiting", () => {
+  if (!videoSession || mediaViewerVideo.ended) return;
+  const percent = videoBufferPercent();
+  setVideoLoading(
+    "buffering",
+    percent === null ? "缓冲中…" : `缓冲中 ${Math.round(percent)}%`,
+    percent,
+  );
+  startVideoWatchdog();
+});
+
+mediaViewerVideo.addEventListener("stalled", () => {
+  if (!videoSession) return;
+  refreshVideoProgress();
+  startVideoWatchdog();
+});
+
+mediaViewerVideo.addEventListener("error", () => {
+  if (!videoSession) return;
+  if (!mediaViewerVideo.getAttribute("src")) return;
+  const { relative } = videoSession;
+  if (relative && videoHost === "cdn") {
+    videoHost = "origin";
+    try {
+      sessionStorage.setItem(VIDEO_HOST_KEY, "origin");
+    } catch {
+      /* ignore */
+    }
+    mediaOpenVideo.href = relative;
+    videoSession.slow = false;
+    videoSession.timedOut = false;
+    videoSession.startedAt = performance.now();
+    setVideoLoading("loading", "正在切换线路…");
+    mediaViewerVideo.src = relative;
+    mediaViewerVideo.load();
+    mediaViewerVideo.play().catch(() => undefined);
+    startVideoWatchdog();
+    return;
+  }
+  setVideoLoading("error", "视频加载失败，请点右下角「打开视频」");
+  mediaOpenVideo.classList.add("is-urgent");
+});
 
 function updateMediaViewer(options = {}) {
   const items = currentMediaItems();
@@ -378,6 +637,7 @@ function updateMediaViewer(options = {}) {
     mediaLoading.hidden = true;
     mediaOpenVideo.hidden = true;
     mediaOpenVideo.removeAttribute("href");
+    mediaQualityButton.hidden = true;
     mediaViewerImage.src = item.src;
     mediaViewerImage.alt = item.alt;
   }
@@ -497,6 +757,7 @@ libraryPageClose.addEventListener("click", closeLibrary);
 mediaViewerClose.addEventListener("click", closeMediaViewer);
 mediaPreviousButton.addEventListener("click", () => stepMedia(-1));
 mediaNextButton.addEventListener("click", () => stepMedia(1));
+mediaQualityButton.addEventListener("click", toggleVideoQuality);
 mediaViewerImage.addEventListener("click", () => {
   if (mediaViewerImage.hidden) return;
   mediaViewerStage.classList.toggle("is-image-zoomed");
@@ -658,7 +919,7 @@ function warmSlideCache() {
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js?v=18", { scope: "./" })
+    navigator.serviceWorker.register("sw.js?v=19", { scope: "./" })
       .then(warmSlideCache)
       .catch(() => undefined);
   }, { once: true });

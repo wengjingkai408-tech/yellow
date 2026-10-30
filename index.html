@@ -14,8 +14,8 @@
     <link rel="preload" as="image" type="image/webp"
       href="assets/slides-mobile/slide-01.webp"
       media="(max-width: 1100px)" fetchpriority="high">
-    <link rel="stylesheet" href="styles.css?v=18">
-    <link rel="stylesheet" href="mobile-fix.css?v=18">
+    <link rel="stylesheet" href="styles.css?v=19">
+    <link rel="stylesheet" href="mobile-fix.css?v=19">
   </head>
   <body>
     <div class="app">
@@ -211,9 +211,23 @@
             x5-video-player-fullscreen="true"
             preload="metadata"
           ></video>
-          <div class="media-loading" id="mediaLoading" hidden>
+          <div class="media-loading" id="mediaLoading" hidden data-state="loading">
             <span class="media-spinner" aria-hidden="true"></span>
-            <span>正在加载视频</span>
+            <div class="media-loading-copy">
+              <span id="mediaLoadingText">正在加载视频</span>
+              <div
+                class="media-progress"
+                id="mediaProgress"
+                role="progressbar"
+                aria-label="视频缓冲进度"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+                hidden
+              >
+                <span class="media-progress-fill" id="mediaProgressFill"></span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -224,6 +238,7 @@
           <h2 id="mediaViewerTitle">图片 01</h2>
         </div>
         <div class="media-navigation">
+          <button class="media-quality" id="mediaQualityButton" type="button" hidden>高清</button>
           <a class="media-open-video" id="mediaOpenVideo" href="" target="_blank" rel="noopener noreferrer" hidden>
             打开视频
           </a>
@@ -241,6 +256,6 @@
       </footer>
     </div>
 
-    <script src="app.js?v=18" defer></script>
+    <script src="app.js?v=19" defer></script>
   </body>
 </html>
