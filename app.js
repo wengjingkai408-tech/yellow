@@ -337,7 +337,7 @@ const VIDEO_HOST_KEY = "yellow-video-host";
 const VIDEO_QUALITY_KEY = "yellow-video-quality";
 const CDN_REPO = "wengjingkai408-tech/yellow";
 const CDN_REF = "main";
-const CDN_VERSION = 20;
+const CDN_VERSION = 21;
 
 function defaultVideoQuality() {
   const saved = localStorage.getItem(VIDEO_QUALITY_KEY);
@@ -352,76 +352,44 @@ let videoQuality = defaultVideoQuality();
 let videoHost = sessionStorage.getItem(VIDEO_HOST_KEY) || "";
 let videoSession = null;
 let videoTicker = 0;
+let sourceGuardTimer = 0;
 
 function cdnAsset(relativePath) {
   return `https://cdn.jsdelivr.net/gh/${CDN_REPO}@${CDN_REF}/${relativePath}?v=${CDN_VERSION}`;
 }
 
-function probeVideoUrl(url, timeout = 2000) {
-  return new Promise((resolve) => {
-    const controller = new AbortController();
-    let settled = false;
-    const timer = window.setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      controller.abort();
-      resolve(null);
-    }, timeout);
-    const started = performance.now();
-    fetch(url, {
-      headers: { Range: "bytes=0-32767" },
-      cache: "no-store",
-      mode: "cors",
-      signal: controller.signal,
-    })
-      .then((response) => {
-        const ok = response.status === 206 || (response.status >= 200 && response.status < 300);
-        if (!ok) throw new Error(`status ${response.status}`);
-        return response.arrayBuffer();
-      })
-      .then((buffer) => {
-        if (settled) return;
-        settled = true;
-        window.clearTimeout(timer);
-        if (!buffer || buffer.byteLength === 0) {
-          resolve(null);
-          return;
-        }
-        resolve({ url, ms: Math.round(performance.now() - started) });
-      })
-      .catch(() => {
-        if (settled) return;
-        settled = true;
-        window.clearTimeout(timer);
-        resolve(null);
-      });
-  });
+function preferredVideoHost() {
+  return videoHost === "origin" ? "origin" : "cdn";
 }
 
-async function resolveVideoUrl(relativePath) {
-  if (videoHost === "origin") return relativePath;
-  if (videoHost === "cdn") return cdnAsset(relativePath);
-
-  const cdnUrl = cdnAsset(relativePath);
-  const [cdn, origin] = await Promise.all([
-    probeVideoUrl(cdnUrl),
-    probeVideoUrl(relativePath),
-  ]);
-
-  if (cdn && (!origin || cdn.ms <= origin.ms)) {
-    videoHost = "cdn";
-  } else if (origin) {
-    videoHost = "origin";
-  } else {
-    videoHost = "origin";
-  }
-
+function rememberVideoHost(host) {
+  videoHost = host;
   try {
-    sessionStorage.setItem(VIDEO_HOST_KEY, videoHost);
+    sessionStorage.setItem(VIDEO_HOST_KEY, host);
   } catch {
     /* ignore */
   }
-  return videoHost === "cdn" ? cdnUrl : relativePath;
+}
+
+function applyVideoSource(relative, token, shouldPlay = true) {
+  const url = preferredVideoHost() === "cdn" ? cdnAsset(relative) : relative;
+  mediaOpenVideo.href = url;
+  mediaViewerVideo.src = url;
+  mediaViewerVideo.load();
+  if (shouldPlay) mediaViewerVideo.play().catch(() => undefined);
+  startSourceGuard(relative, token);
+  startVideoWatchdog();
+}
+
+function startSourceGuard(relative, token) {
+  window.clearTimeout(sourceGuardTimer);
+  if (preferredVideoHost() !== "cdn") return;
+  sourceGuardTimer = window.setTimeout(() => {
+    if (token !== mediaLoadToken || !videoSession || mediaViewerVideo.readyState >= 1) return;
+    rememberVideoHost("origin");
+    setVideoLoading("loading", "正在切换线路…");
+    applyVideoSource(relative, token);
+  }, 3000);
 }
 
 function setVideoLoading(state, message, progress = null) {
@@ -500,6 +468,7 @@ function startVideoWatchdog() {
 
 function resetVideoViewer() {
   window.clearInterval(videoTicker);
+  window.clearTimeout(sourceGuardTimer);
   videoSession = null;
   mediaViewerVideo.pause();
   mediaViewerVideo.removeAttribute("src");
@@ -510,7 +479,7 @@ function resetVideoViewer() {
   mediaOpenVideo.classList.remove("is-urgent");
 }
 
-async function loadViewerVideo(item, token, shouldPlay, startAt = 0) {
+function loadViewerVideo(item, token, shouldPlay, startAt = 0) {
   window.clearInterval(videoTicker);
   videoSession = {
     token,
@@ -533,23 +502,10 @@ async function loadViewerVideo(item, token, shouldPlay, startAt = 0) {
   setVideoLoading("loading", "正在连接…");
 
   const relative = videoQuality === "hd" ? item.srcHd : item.srcLite;
-  let url = relative;
-  try {
-    url = await resolveVideoUrl(relative);
-  } catch {
-    url = relative;
-  }
-  if (token !== mediaLoadToken || !videoSession || videoSession.token !== token) return;
-
   videoSession.relative = relative;
   videoSession.startedAt = performance.now();
 
-  mediaOpenVideo.href = url;
-  mediaViewerVideo.src = url;
-  mediaViewerVideo.load();
-  startVideoWatchdog();
-
-  if (shouldPlay) mediaViewerVideo.play().catch(() => undefined);
+  applyVideoSource(relative, token, shouldPlay);
 }
 
 function toggleVideoQuality() {
@@ -610,22 +566,13 @@ mediaViewerVideo.addEventListener("error", () => {
   if (!videoSession) return;
   if (!mediaViewerVideo.getAttribute("src")) return;
   const { relative } = videoSession;
-  if (relative && videoHost === "cdn") {
-    videoHost = "origin";
-    try {
-      sessionStorage.setItem(VIDEO_HOST_KEY, "origin");
-    } catch {
-      /* ignore */
-    }
-    mediaOpenVideo.href = relative;
+  if (relative && preferredVideoHost() === "cdn") {
+    rememberVideoHost("origin");
     videoSession.slow = false;
     videoSession.timedOut = false;
     videoSession.startedAt = performance.now();
     setVideoLoading("loading", "正在切换线路…");
-    mediaViewerVideo.src = relative;
-    mediaViewerVideo.load();
-    mediaViewerVideo.play().catch(() => undefined);
-    startVideoWatchdog();
+    applyVideoSource(relative, videoSession.token);
     return;
   }
   setVideoLoading("error", "视频加载失败，请点右下角「打开视频」");
@@ -937,7 +884,7 @@ function warmSlideCache() {
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js?v=20", { scope: "./" })
+    navigator.serviceWorker.register("sw.js?v=21", { scope: "./" })
       .then(warmSlideCache)
       .catch(() => undefined);
   }, { once: true });
