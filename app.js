@@ -337,7 +337,7 @@ const VIDEO_HOST_KEY = "yellow-video-host";
 const VIDEO_QUALITY_KEY = "yellow-video-quality";
 const CDN_REPO = "wengjingkai408-tech/yellow";
 const CDN_REF = "main";
-const CDN_VERSION = 21;
+const CDN_VERSION = 22;
 
 function defaultVideoQuality() {
   const saved = localStorage.getItem(VIDEO_QUALITY_KEY);
@@ -359,6 +359,7 @@ function cdnAsset(relativePath) {
 }
 
 function preferredVideoHost() {
+  if (videoSession && videoSession.forceOrigin) return "origin";
   return videoHost === "origin" ? "origin" : "cdn";
 }
 
@@ -385,8 +386,9 @@ function startSourceGuard(relative, token) {
   window.clearTimeout(sourceGuardTimer);
   if (preferredVideoHost() !== "cdn") return;
   sourceGuardTimer = window.setTimeout(() => {
-    if (token !== mediaLoadToken || !videoSession || mediaViewerVideo.readyState >= 1) return;
-    rememberVideoHost("origin");
+    if (token !== mediaLoadToken || !videoSession) return;
+    if (mediaViewerVideo.readyState >= 1 || mediaViewerVideo.buffered.length) return;
+    videoSession.forceOrigin = true;
     setVideoLoading("loading", "正在切换线路…");
     applyVideoSource(relative, token);
   }, 3000);
@@ -884,7 +886,7 @@ function warmSlideCache() {
 
 if ("serviceWorker" in navigator && window.isSecureContext) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js?v=21", { scope: "./" })
+    navigator.serviceWorker.register("sw.js?v=22", { scope: "./" })
       .then(warmSlideCache)
       .catch(() => undefined);
   }, { once: true });
